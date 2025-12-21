@@ -5,6 +5,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -55,9 +56,13 @@ import com.composables.icons.lucide.Share2
 import com.composables.icons.lucide.SunMoon
 import com.composables.icons.lucide.Terminal
 import com.composables.icons.lucide.Volume2
+import com.composables.icons.lucide.User
+import com.composables.icons.lucide.Shield
+import com.composables.icons.lucide.LogOut
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.isNotConfigured
+import me.rerere.rikkahub.data.datastore.UserSessionStore
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.context.LocalNavController
@@ -67,13 +72,22 @@ import me.rerere.rikkahub.ui.theme.ColorMode
 import me.rerere.rikkahub.utils.countChatFiles
 import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.plus
+import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingPage(vm: SettingVM = koinViewModel()) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val navController = LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
+    val userSessionStore: UserSessionStore = koinInject()
+    val isLoggedIn by userSessionStore.isLoggedIn.collectAsStateWithLifecycle(initialValue = false)
+    val username by userSessionStore.username.collectAsStateWithLifecycle(initialValue = null)
+    val email by userSessionStore.email.collectAsStateWithLifecycle(initialValue = null)
+    val isAdmin by userSessionStore.isAdmin.collectAsStateWithLifecycle(initialValue = false)
+    val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -298,14 +312,55 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 )
             }
 
-            item {
-                SettingItem(
-                    navController = navController,
-                    title = { Text("登录/注册") },
-                    description = { Text("登录您的账户以同步数据") },
-                    icon = { Icon(Lucide.Drama, "Account") },
-                    link = Screen.Login
-                )
+            if (isLoggedIn) {
+                // Show user info when logged in
+                item {
+                    SettingItem(
+                        navController = navController,
+                        title = { Text(username ?: "用户") },
+                        description = { Text(email ?: "") },
+                        icon = { Icon(Lucide.User, "Account") }
+                    )
+                }
+                
+                // Show admin button if user is admin
+                if (isAdmin) {
+                    item {
+                        SettingItem(
+                            navController = navController,
+                            title = { Text("管理面板") },
+                            description = { Text("管理用户和对话") },
+                            icon = { Icon(Lucide.Shield, "Admin") },
+                            link = Screen.Admin
+                        )
+                    }
+                }
+                
+                // Logout button
+                item {
+                    SettingItem(
+                        navController = navController,
+                        title = { Text("退出登录") },
+                        description = { Text("退出当前账户") },
+                        icon = { Icon(Lucide.LogOut, "Logout") },
+                        onClick = {
+                            scope.launch {
+                                userSessionStore.clearSession()
+                            }
+                        }
+                    )
+                }
+            } else {
+                // Show login button when not logged in
+                item {
+                    SettingItem(
+                        navController = navController,
+                        title = { Text("登录/注册") },
+                        description = { Text("登录您的账户以同步数据") },
+                        icon = { Icon(Lucide.User, "Account") },
+                        link = Screen.Login
+                    )
+                }
             }
 
             stickyHeader {
