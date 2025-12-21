@@ -108,6 +108,7 @@ class RouteActivity : ComponentActivity() {
     private val highlighter by inject<Highlighter>()
     private val okHttpClient by inject<OkHttpClient>()
     private val settingsStore by inject<SettingsStore>()
+    private val userSessionStore by inject<me.rerere.rikkahub.data.datastore.UserSessionStore>()
     private var navStack by mutableStateOf<NavHostController?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -179,6 +180,17 @@ class RouteActivity : ComponentActivity() {
         val toastState = rememberToasterState()
         val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
         val tts = rememberCustomTtsState()
+        val isLoggedIn by userSessionStore.isLoggedIn.collectAsStateWithLifecycle(initialValue = false)
+        
+        // Check login status and navigate to login page if not logged in
+        LaunchedEffect(isLoggedIn) {
+            if (!isLoggedIn) {
+                navBackStack.navigate(Screen.Login) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
+        
         SharedTransitionLayout {
             CompositionLocalProvider(
                 LocalNavController provides navBackStack,

@@ -13,9 +13,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.lucide.Eye
 import com.composables.icons.lucide.EyeOff
 import com.composables.icons.lucide.Lucide
-import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.context.LocalNavController
 import org.koin.androidx.compose.koinViewModel
+import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,15 +30,17 @@ fun LoginPage(viewModel: AuthViewModel = koinViewModel()) {
     
     LaunchedEffect(loginState) {
         if (loginState is AuthState.Success) {
-            navController.popBackStack()
+            // Navigate to Chat screen after successful login
+            navController.navigate(Screen.Chat(id = Uuid.random().toString())) {
+                popUpTo(0) { inclusive = true }
+            }
         }
     }
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("登录") },
-                navigationIcon = { BackButton() }
+                title = { Text("登录") }
             )
         }
     ) { padding ->
