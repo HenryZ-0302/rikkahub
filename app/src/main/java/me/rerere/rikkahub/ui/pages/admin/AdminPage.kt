@@ -11,11 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.composables.icons.lucide.Ban
+import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.ChevronUp
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Shield
 import com.composables.icons.lucide.Trash2
 import com.composables.icons.lucide.Users
+import com.composables.icons.lucide.UserX
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import org.koin.androidx.compose.koinViewModel
 
@@ -24,11 +28,13 @@ import org.koin.androidx.compose.koinViewModel
 fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
     val users by viewModel.users.collectAsStateWithLifecycle()
     val userConversations by viewModel.userConversations.collectAsStateWithLifecycle()
+    val allowRegistration by viewModel.allowRegistration.collectAsStateWithLifecycle()
     
     var selectedUser by remember { mutableStateOf<AdminUser?>(null) }
     
     LaunchedEffect(Unit) {
         viewModel.loadUsers()
+        viewModel.loadConfig()
     }
     
     Scaffold(
@@ -58,13 +64,47 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // Registration toggle
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("允许新用户注册", fontWeight = FontWeight.Medium)
+                                        Text(
+                                            if (allowRegistration) "新用户可以注册账户" else "注册已关闭",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                    Switch(
+                                        checked = allowRegistration,
+                                        onCheckedChange = { viewModel.toggleRegistration() }
+                                    )
+                                }
+                            }
+                        }
+                        
+                        item {
+                            Text(
+                                "用户列表 (${state.data.size})",
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                        
                         items(state.data) { user ->
                             UserCard(
                                 user = user,
                                 onClick = {
                                     selectedUser = user
                                     viewModel.loadUserConversations(user.id)
-                                }
+                                },
+                                onToggleStatus = { viewModel.toggleUserStatus(user.id) }
                             )
                         }
                     }
@@ -245,21 +285,65 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
 }
 
 @Composable
-private fun UserCard(user: AdminUser, onClick: () -> Unit) {
+private fun UserCard(
+    user: AdminUser, 
+    onClick: () -> Unit,
+    onToggleStatus: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = if (user.isDisabled) CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+        ) else CardDefaults.cardColors()
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(Lucide.Users, null)
+            Icon(
+                if (user.isAdmin) Lucide.Shield 
+                else if (user.isDisabled) Lucide.UserX 
+                else Lucide.Users, 
+                null,
+                tint = when {
+                    user.isAdmin -> MaterialTheme.colorScheme.primary
+                    user.isDisabled -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+            )
             Column(modifier = Modifier.weight(1f)) {
-                Text(user.username, fontWeight = FontWeight.Medium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(user.username, fontWeight = FontWeight.Medium)
+                    if (user.isAdmin) {
+                        Text(" (管理员)", 
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
+                    if (user.isDisabled) {
+                        Text(" (已禁用)", 
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error)
+                    }
+                }
                 Text(user.email, style = MaterialTheme.typography.bodySmall)
             }
             Text("${user.conversationCount} 对话", style = MaterialTheme.typography.labelMedium)
+            // Don't show disable button for admin users
+            if (!user.isAdmin) {
+                IconButton(
+                    onClick = onToggleStatus,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        if (user.isDisabled) Lucide.Check else Lucide.Ban,
+                        contentDescription = if (user.isDisabled) "启用" else "禁用",
+                        tint = if (user.isDisabled) MaterialTheme.colorScheme.primary 
+                               else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
     }
 }

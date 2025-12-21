@@ -11,7 +11,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import me.rerere.rikkahub.data.datastore.UserSessionStore
 import okhttp3.OkHttpClient
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 
 sealed class UiState<out T> {
     data object Idle : UiState<Nothing>()
@@ -72,6 +74,18 @@ data class ConversationsData(
     val pagination: Pagination
 )
 
+@Serializable
+data class ConfigItem(
+    val key: String,
+    val value: String
+)
+
+@Serializable
+data class ConfigResponse(
+    val success: Boolean,
+    val data: List<ConfigItem>? = null
+)
+
 class AdminViewModel(
     private val userSessionStore: UserSessionStore,
     private val okHttpClient: OkHttpClient,
@@ -87,6 +101,9 @@ class AdminViewModel(
     
     private val _userConversations = MutableStateFlow<UiState<List<AdminConversation>>>(UiState.Idle)
     val userConversations: StateFlow<UiState<List<AdminConversation>>> = _userConversations.asStateFlow()
+    
+    private val _allowRegistration = MutableStateFlow(true)
+    val allowRegistration: StateFlow<Boolean> = _allowRegistration.asStateFlow()
     
     fun loadUsers() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -161,6 +178,76 @@ class AdminViewModel(
                 val response = okHttpClient.newCall(request).execute()
                 if (response.isSuccessful) {
                     loadUserConversations(userId)
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+    
+    fun toggleUserStatus(userId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/users/$userId/toggle-status")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post("".toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    loadUsers() // Refresh user list
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+    
+    fun loadConfig() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/config")
+                    .addHeader("Authorization", "Bearer $token")
+                    .get()
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                val responseBody = response.body?.string() ?: ""
+                
+                if (response.isSuccessful) {
+                    val configResponse = json.decodeFromString<ConfigResponse>(responseBody)
+                    if (configResponse.success && configResponse.data != null) {
+                        val allowReg = configResponse.data.find { it.key == "allow_registration" }
+                        _allowRegistration.value = allowReg?.value != "false"
+                    }
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+    
+    fun toggleRegistration() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                val newValue = if (_allowRegistration.value) "false" else "true"
+                val requestBody = """{"key":"allow_registration","value":"$newValue"}"""
+                    .toRequestBody("application/json".toMediaType())
+                
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/config")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(requestBody)
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    _allowRegistration.value = newValue == "true"
                 }
             } catch (e: Exception) {
                 // Handle error
