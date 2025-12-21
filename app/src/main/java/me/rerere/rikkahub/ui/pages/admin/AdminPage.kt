@@ -89,6 +89,11 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                             }
                         }
                         
+                        // Public provider config
+                        item {
+                            PublicProviderConfigCard(viewModel = viewModel)
+                        }
+                        
                         item {
                             Text(
                                 "用户列表 (${state.data.size})",
@@ -343,6 +348,77 @@ private fun UserCard(
                         modifier = Modifier.size(18.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PublicProviderConfigCard(viewModel: AdminViewModel) {
+    val publicProviderEnabled by viewModel.publicProviderEnabled.collectAsStateWithLifecycle()
+    val apiKey by viewModel.publicProviderApiKey.collectAsStateWithLifecycle()
+    val baseUrl by viewModel.publicProviderBaseUrl.collectAsStateWithLifecycle()
+    
+    var editedApiKey by remember(apiKey) { mutableStateOf(apiKey) }
+    var editedBaseUrl by remember(baseUrl) { mutableStateOf(baseUrl) }
+    var expanded by remember { mutableStateOf(false) }
+    
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("公益提供商", fontWeight = FontWeight.Medium)
+                    Text(
+                        if (publicProviderEnabled) "已启用 - 用户可使用公益API" else "已关闭",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Switch(
+                    checked = publicProviderEnabled,
+                    onCheckedChange = { viewModel.togglePublicProvider() }
+                )
+            }
+            
+            if (publicProviderEnabled) {
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                OutlinedTextField(
+                    value = editedApiKey,
+                    onValueChange = { editedApiKey = it },
+                    label = { Text("API Key") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    trailingIcon = {
+                        if (editedApiKey != apiKey) {
+                            TextButton(onClick = { viewModel.updatePublicProviderApiKey(editedApiKey) }) {
+                                Text("保存")
+                            }
+                        }
+                    }
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                OutlinedTextField(
+                    value = editedBaseUrl,
+                    onValueChange = { editedBaseUrl = it },
+                    label = { Text("Base URL") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    trailingIcon = {
+                        if (editedBaseUrl != baseUrl) {
+                            TextButton(onClick = { viewModel.updatePublicProviderBaseUrl(editedBaseUrl) }) {
+                                Text("保存")
+                            }
+                        }
+                    }
+                )
             }
         }
     }

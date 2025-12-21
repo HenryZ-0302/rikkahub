@@ -105,6 +105,15 @@ class AdminViewModel(
     private val _allowRegistration = MutableStateFlow(true)
     val allowRegistration: StateFlow<Boolean> = _allowRegistration.asStateFlow()
     
+    private val _publicProviderEnabled = MutableStateFlow(false)
+    val publicProviderEnabled: StateFlow<Boolean> = _publicProviderEnabled.asStateFlow()
+    
+    private val _publicProviderApiKey = MutableStateFlow("")
+    val publicProviderApiKey: StateFlow<String> = _publicProviderApiKey.asStateFlow()
+    
+    private val _publicProviderBaseUrl = MutableStateFlow("https://api.openai.com/v1")
+    val publicProviderBaseUrl: StateFlow<String> = _publicProviderBaseUrl.asStateFlow()
+    
     fun loadUsers() {
         viewModelScope.launch(Dispatchers.IO) {
             _users.value = UiState.Loading
@@ -221,8 +230,14 @@ class AdminViewModel(
                 if (response.isSuccessful) {
                     val configResponse = json.decodeFromString<ConfigResponse>(responseBody)
                     if (configResponse.success && configResponse.data != null) {
-                        val allowReg = configResponse.data.find { it.key == "allow_registration" }
-                        _allowRegistration.value = allowReg?.value != "false"
+                        configResponse.data.forEach { config ->
+                            when (config.key) {
+                                "allow_registration" -> _allowRegistration.value = config.value != "false"
+                                "public_provider_enabled" -> _publicProviderEnabled.value = config.value == "true"
+                                "public_provider_api_key" -> _publicProviderApiKey.value = config.value
+                                "public_provider_base_url" -> _publicProviderBaseUrl.value = config.value.ifEmpty { "https://api.openai.com/v1" }
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -248,6 +263,76 @@ class AdminViewModel(
                 val response = okHttpClient.newCall(request).execute()
                 if (response.isSuccessful) {
                     _allowRegistration.value = newValue == "true"
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+    
+    fun togglePublicProvider() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                val newValue = if (_publicProviderEnabled.value) "false" else "true"
+                val requestBody = """{"key":"public_provider_enabled","value":"$newValue"}"""
+                    .toRequestBody("application/json".toMediaType())
+                
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/config")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(requestBody)
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    _publicProviderEnabled.value = newValue == "true"
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+    
+    fun updatePublicProviderApiKey(apiKey: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                val requestBody = """{"key":"public_provider_api_key","value":"$apiKey"}"""
+                    .toRequestBody("application/json".toMediaType())
+                
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/config")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(requestBody)
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    _publicProviderApiKey.value = apiKey
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+    
+    fun updatePublicProviderBaseUrl(baseUrl: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                val requestBody = """{"key":"public_provider_base_url","value":"$baseUrl"}"""
+                    .toRequestBody("application/json".toMediaType())
+                
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/config")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(requestBody)
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    _publicProviderBaseUrl.value = baseUrl
                 }
             } catch (e: Exception) {
                 // Handle error
