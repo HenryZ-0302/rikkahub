@@ -92,6 +92,9 @@ import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.translator.TranslatorPage
 import me.rerere.rikkahub.ui.pages.webview.WebViewPage
+import me.rerere.rikkahub.ui.pages.auth.LoginPage
+import me.rerere.rikkahub.ui.pages.auth.RegisterPage
+import me.rerere.rikkahub.ui.pages.admin.AdminPage
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.ui.theme.RikkahubTheme
 import okhttp3.OkHttpClient
@@ -359,6 +362,18 @@ class RouteActivity : ComponentActivity() {
                     composable<Screen.Prompts> {
                         PromptPage()
                     }
+
+                    composable<Screen.Login> {
+                        LoginPage()
+                    }
+
+                    composable<Screen.Register> {
+                        RegisterPage()
+                    }
+
+                    composable<Screen.Admin> {
+                        AdminPage()
+                    }
                 }
             }
         }
@@ -497,4 +512,13 @@ sealed interface Screen {
 
     @Serializable
     data object Prompts : Screen
+
+    @Serializable
+    data object Login : Screen
+
+    @Serializable
+    data object Register : Screen
+
+    @Serializable
+    data object Admin : Screen
 }

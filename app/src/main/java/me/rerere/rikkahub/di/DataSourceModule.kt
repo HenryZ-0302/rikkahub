@@ -14,6 +14,7 @@ import me.rerere.rikkahub.data.ai.transformers.TemplateTransformer
 import me.rerere.rikkahub.data.api.RikkaHubAPI
 import me.rerere.rikkahub.data.api.SponsorAPI
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.datastore.UserSessionStore
 import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.db.Migration_6_7
 import me.rerere.rikkahub.data.ai.mcp.McpManager
@@ -30,6 +31,10 @@ import java.util.concurrent.TimeUnit
 val dataSourceModule = module {
     single {
         SettingsStore(context = get(), scope = get())
+    }
+
+    single {
+        UserSessionStore(context = get())
     }
 
     single {

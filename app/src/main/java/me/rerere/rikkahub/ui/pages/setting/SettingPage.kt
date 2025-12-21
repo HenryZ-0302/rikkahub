@@ -262,35 +262,54 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 )
             }
 
-            item {
-                val context = LocalContext.current
-                val storageState by produceState(-1 to 0L) {
-                    value = context.countChatFiles()
-                }
-                SettingItem(
-                    navController = navController,
-                    title = { Text(stringResource(R.string.setting_page_chat_storage)) },
-                    description = {
-                        if (storageState.first == -1) {
-                            Text(stringResource(R.string.calculating))
-                        } else {
-                            Text(
-                                stringResource(
-                                    R.string.setting_page_chat_storage_desc,
-                                    storageState.first,
-                                    storageState.second / 1024 / 1024.0
-                                )
-                            )
-                        }
-                    },
-                    icon = {
-                        Icon(Lucide.HardDrive, "Storage")
-                    },
-                )
-            }
-
-            stickyHeader {
-                Text(
+            item {\r
+                val context = LocalContext.current\r
+                val storageState by produceState(-1 to 0L) {\r
+                    value = context.countChatFiles()\r
+                }\r
+                SettingItem(\r
+                    navController = navController,\r
+                    title = { Text(stringResource(R.string.setting_page_chat_storage)) },\r
+                    description = {\r
+                        if (storageState.first == -1) {\r
+                            Text(stringResource(R.string.calculating))\r
+                        } else {\r
+                            Text(\r
+                                stringResource(\r
+                                    R.string.setting_page_chat_storage_desc,\r
+                                    storageState.first,\r
+                                    storageState.second / 1024 / 1024.0\r
+                                )\r
+                            )\r
+                        }\r
+                    },\r
+                    icon = {\r
+                        Icon(Lucide.HardDrive, "Storage")\r
+                    },\r
+                )\r
+            }\r
+\r
+            stickyHeader {\r
+                Text(\r
+                    text = "账户",\r
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),\r
+                    style = MaterialTheme.typography.labelSmall,\r
+                    color = MaterialTheme.colorScheme.primary\r
+                )\r
+            }\r
+\r
+            item {\r
+                SettingItem(\r
+                    navController = navController,\r
+                    title = { Text("登录/注册") },\r
+                    description = { Text("登录您的账户以同步数据") },\r
+                    icon = { Icon(Lucide.Drama, "Account") },\r
+                    link = Screen.Login\r
+                )\r
+            }\r
+\r
+            stickyHeader {\r
+                Text(\r
                     text = stringResource(R.string.setting_page_about),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,

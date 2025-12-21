@@ -1,7 +1,9 @@
 package me.rerere.rikkahub.di
 
+import me.rerere.rikkahub.ui.pages.admin.AdminViewModel
 import me.rerere.rikkahub.ui.pages.assistant.AssistantVM
 import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantDetailVM
+import me.rerere.rikkahub.ui.pages.auth.AuthViewModel
 import me.rerere.rikkahub.ui.pages.backup.BackupVM
 import me.rerere.rikkahub.ui.pages.chat.ChatVM
 import me.rerere.rikkahub.ui.pages.debug.DebugVM
@@ -51,4 +53,18 @@ val viewModelModule = module {
     viewModelOf(::ImgGenVM)
     viewModelOf(::DeveloperVM)
     viewModelOf(::PromptVM)
+    viewModel<AuthViewModel> {
+        AuthViewModel(
+            userSessionStore = get(),
+            okHttpClient = get(),
+            json = get()
+        )
+    }
+    viewModel<AdminViewModel> {
+        AdminViewModel(
+            userSessionStore = get(),
+            okHttpClient = get(),
+            json = get()
+        )
+    }
 }
