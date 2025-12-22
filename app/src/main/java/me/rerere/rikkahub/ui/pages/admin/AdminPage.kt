@@ -33,6 +33,28 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
     
     var selectedUser by remember { mutableStateOf<AdminUser?>(null) }
     var selectedConversation by remember { mutableStateOf<AdminConversation?>(null) }
+    var userToDelete by remember { mutableStateOf<AdminUser?>(null) }
+    
+    // Delete user confirmation dialog
+    if (userToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { userToDelete = null },
+            title = { Text("删除用户") },
+            text = { Text("确定要删除用户 ${userToDelete?.username} 吗？此操作不可恢复。") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        userToDelete?.let { viewModel.deleteUser(it.id) }
+                        userToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("删除") }
+            },
+            dismissButton = {
+                TextButton(onClick = { userToDelete = null }) { Text("取消") }
+            }
+        )
+    }
     
     LaunchedEffect(Unit) {
         viewModel.loadUsers()
@@ -111,7 +133,8 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                     selectedUser = user
                                     viewModel.loadUserConversations(user.id)
                                 },
-                                onToggleStatus = { viewModel.toggleUserStatus(user.id) }
+                                onToggleStatus = { viewModel.toggleUserStatus(user.id) },
+                                onDelete = { userToDelete = user }
                             )
                         }
                     }
@@ -269,12 +292,17 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                                     modifier = Modifier.fillMaxWidth().clickable {
                                                         selectedConversation = conv
                                                         viewModel.loadConversationMessages(conv.id)
-                                                    }
+                                                    },
+                                                    colors = CardDefaults.cardColors(
+                                                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                                    )
                                                 ) {
                                                     Column(modifier = Modifier.padding(12.dp)) {
-                                                        Text(conv.title, maxLines = 2)
+                                                        Text(conv.title, maxLines = 2,
+                                                            color = MaterialTheme.colorScheme.onErrorContainer)
                                                         Text(conv.updatedAt.take(10),
-                                                            style = MaterialTheme.typography.labelSmall)
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f))
                                                     }
                                                 }
                                             }
@@ -398,7 +426,8 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
 private fun UserCard(
     user: AdminUser, 
     onClick: () -> Unit,
-    onToggleStatus: () -> Unit
+    onToggleStatus: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -439,7 +468,7 @@ private fun UserCard(
                 Text(user.email, style = MaterialTheme.typography.bodySmall)
             }
             Text("${user.conversationCount} 对话", style = MaterialTheme.typography.labelMedium)
-            // Don't show disable button for admin users
+            // Don't show buttons for admin users
             if (!user.isAdmin) {
                 IconButton(
                     onClick = onToggleStatus,
@@ -450,6 +479,17 @@ private fun UserCard(
                         contentDescription = if (user.isDisabled) "启用" else "禁用",
                         tint = if (user.isDisabled) MaterialTheme.colorScheme.primary 
                                else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Lucide.Trash2,
+                        contentDescription = "删除用户",
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(18.dp)
                     )
                 }

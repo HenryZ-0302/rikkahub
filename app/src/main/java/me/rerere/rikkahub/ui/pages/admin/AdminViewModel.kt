@@ -238,6 +238,26 @@ class AdminViewModel(
         }
     }
     
+    fun deleteUser(userId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/users/$userId")
+                    .addHeader("Authorization", "Bearer $token")
+                    .delete()
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    loadUsers() // Refresh user list
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+    
     fun loadConfig() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
