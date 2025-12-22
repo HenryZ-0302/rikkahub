@@ -22,6 +22,12 @@ import com.composables.icons.lucide.Users
 import com.composables.icons.lucide.UserX
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import org.koin.androidx.compose.koinViewModel
+import coil3.compose.AsyncImage
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -393,11 +399,41 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                                     )
                                                 }
                                                 Spacer(modifier = Modifier.height(4.dp))
-                                                Text(
-                                                    text = msg.content,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    maxLines = 20
-                                                )
+                                                // Display parts: text and images
+                                                if (msg.parts.isNotEmpty()) {
+                                                    msg.parts.forEach { part ->
+                                                        when (part.type) {
+                                                            "text" -> {
+                                                                part.text?.takeIf { it.trim().isNotEmpty() }?.let { text ->
+                                                                    Text(
+                                                                        text = text.trim(),
+                                                                        style = MaterialTheme.typography.bodySmall
+                                                                    )
+                                                                }
+                                                            }
+                                                            "image" -> {
+                                                                part.url?.let { url ->
+                                                                    AsyncImage(
+                                                                        model = url,
+                                                                        contentDescription = null,
+                                                                        modifier = Modifier
+                                                                            .fillMaxWidth()
+                                                                            .heightIn(max = 200.dp)
+                                                                            .padding(vertical = 4.dp)
+                                                                            .clip(RoundedCornerShape(8.dp)),
+                                                                        contentScale = ContentScale.Fit
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                } else if (msg.content.trim().isNotEmpty()) {
+                                                    // Fallback to content field for backward compatibility
+                                                    Text(
+                                                        text = msg.content.trim(),
+                                                        style = MaterialTheme.typography.bodySmall
+                                                    )
+                                                }
                                             }
                                         }
                                     }

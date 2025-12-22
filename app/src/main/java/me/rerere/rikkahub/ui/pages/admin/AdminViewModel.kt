@@ -75,10 +75,18 @@ data class ConversationsData(
 )
 
 @Serializable
+data class MessagePart(
+    val type: String,     // "text" or "image"
+    val text: String? = null,
+    val url: String? = null
+)
+
+@Serializable
 data class ConversationMessage(
     val id: String,
     val role: String,
-    val content: String,
+    val content: String = "",  // Keep for backward compatibility
+    val parts: List<MessagePart> = emptyList(),
     val createdAt: String
 )
 
