@@ -29,8 +29,10 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
     val users by viewModel.users.collectAsStateWithLifecycle()
     val userConversations by viewModel.userConversations.collectAsStateWithLifecycle()
     val allowRegistration by viewModel.allowRegistration.collectAsStateWithLifecycle()
+    val conversationMessages by viewModel.conversationMessages.collectAsStateWithLifecycle()
     
     var selectedUser by remember { mutableStateOf<AdminUser?>(null) }
+    var selectedConversation by remember { mutableStateOf<AdminConversation?>(null) }
     
     LaunchedEffect(Unit) {
         viewModel.loadUsers()
@@ -222,7 +224,12 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                         }
                                     }
                                     items(activeConversations) { conv ->
-                                        Card(modifier = Modifier.fillMaxWidth()) {
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth().clickable {
+                                                selectedConversation = conv
+                                                viewModel.loadConversationMessages(conv.id)
+                                            }
+                                        ) {
                                             Column(modifier = Modifier.padding(12.dp)) {
                                                 Text(conv.title, fontWeight = FontWeight.Medium, maxLines = 2)
                                                 Text(conv.updatedAt.take(10), 
@@ -258,7 +265,12 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                         }
                                         if (showDeletedExpanded) {
                                             items(deletedConversations) { conv ->
-                                                Card(modifier = Modifier.fillMaxWidth()) {
+                                                Card(
+                                                    modifier = Modifier.fillMaxWidth().clickable {
+                                                        selectedConversation = conv
+                                                        viewModel.loadConversationMessages(conv.id)
+                                                    }
+                                                ) {
                                                     Column(modifier = Modifier.padding(12.dp)) {
                                                         Text(conv.title, maxLines = 2)
                                                         Text(conv.updatedAt.take(10),
@@ -283,6 +295,87 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                 TextButton(onClick = { 
                     selectedUser = null
                     viewModel.clearUserConversations()
+                }) { Text("关闭") }
+            }
+        )
+    }
+    
+    // Conversation messages dialog
+    if (selectedConversation != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                selectedConversation = null
+                viewModel.clearConversationMessages()
+            },
+            title = { 
+                Text(
+                    text = selectedConversation?.title ?: "对话详情",
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+            },
+            text = {
+                Column(modifier = Modifier.heightIn(max = 450.dp)) {
+                    when (val msgState = conversationMessages) {
+                        is UiState.Loading -> {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) { CircularProgressIndicator() }
+                        }
+                        is UiState.Success -> {
+                            if (msgState.data.isEmpty()) {
+                                Text("该对话没有消息", modifier = Modifier.padding(16.dp))
+                            } else {
+                                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    items(msgState.data) { msg ->
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = if (msg.role == "user") 
+                                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                                else MaterialTheme.colorScheme.surfaceVariant
+                                            )
+                                        ) {
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Text(
+                                                        text = if (msg.role == "user") "用户" else "助手",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Text(
+                                                        text = msg.createdAt.take(10),
+                                                        style = MaterialTheme.typography.labelSmall
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = msg.content,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    maxLines = 20
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        is UiState.Error -> {
+                            Text("加载失败: ${msgState.error.message}", 
+                                color = MaterialTheme.colorScheme.error)
+                        }
+                        else -> {}
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { 
+                    selectedConversation = null
+                    viewModel.clearConversationMessages()
                 }) { Text("关闭") }
             }
         )

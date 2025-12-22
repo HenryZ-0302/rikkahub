@@ -75,6 +75,27 @@ data class ConversationsData(
 )
 
 @Serializable
+data class ConversationMessage(
+    val id: String,
+    val role: String,
+    val content: String,
+    val createdAt: String
+)
+
+@Serializable
+data class ConversationMessagesResponse(
+    val success: Boolean,
+    val data: ConversationMessagesData? = null
+)
+
+@Serializable
+data class ConversationMessagesData(
+    val id: String,
+    val title: String,
+    val messages: List<ConversationMessage>
+)
+
+@Serializable
 data class ConfigItem(
     val key: String,
     val value: String
@@ -113,6 +134,9 @@ class AdminViewModel(
     
     private val _publicProviderBaseUrl = MutableStateFlow("https://api.openai.com/v1")
     val publicProviderBaseUrl: StateFlow<String> = _publicProviderBaseUrl.asStateFlow()
+    
+    private val _conversationMessages = MutableStateFlow<UiState<List<ConversationMessage>>>(UiState.Idle)
+    val conversationMessages: StateFlow<UiState<List<ConversationMessage>>> = _conversationMessages.asStateFlow()
     
     fun loadUsers() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -338,6 +362,40 @@ class AdminViewModel(
                 // Handle error
             }
         }
+    }
+    
+    fun loadConversationMessages(conversationId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _conversationMessages.value = UiState.Loading
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/conversations/$conversationId/messages")
+                    .addHeader("Authorization", "Bearer $token")
+                    .get()
+                    .build()
+                
+                val response = okHttpClient.newCall(request).execute()
+                val responseBody = response.body?.string() ?: ""
+                
+                if (response.isSuccessful) {
+                    val messagesResponse = json.decodeFromString<ConversationMessagesResponse>(responseBody)
+                    if (messagesResponse.success && messagesResponse.data != null) {
+                        _conversationMessages.value = UiState.Success(messagesResponse.data.messages)
+                    } else {
+                        _conversationMessages.value = UiState.Error(Exception("Failed to load messages"))
+                    }
+                } else {
+                    _conversationMessages.value = UiState.Error(Exception("HTTP ${response.code}"))
+                }
+            } catch (e: Exception) {
+                _conversationMessages.value = UiState.Error(e)
+            }
+        }
+    }
+    
+    fun clearConversationMessages() {
+        _conversationMessages.value = UiState.Idle
     }
     
     fun clearUserConversations() {
