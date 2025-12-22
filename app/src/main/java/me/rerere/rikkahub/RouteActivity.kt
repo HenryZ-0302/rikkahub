@@ -48,6 +48,7 @@ import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import me.rerere.highlight.Highlighter
 import me.rerere.highlight.LocalHighlighter
@@ -182,10 +183,15 @@ class RouteActivity : ComponentActivity() {
         val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
         val tts = rememberCustomTtsState()
         val isLoggedIn by userSessionStore.isLoggedIn.collectAsStateWithLifecycle(initialValue = false)
+        var hasCheckedLogin by remember { mutableStateOf(false) }
         
         // Check login status and navigate to login page if not logged in
-        LaunchedEffect(isLoggedIn) {
-            if (!isLoggedIn) {
+        // Wait for DataStore to actually load before making navigation decisions
+        LaunchedEffect(Unit) {
+            // Wait for the first real value from DataStore
+            val loggedIn = userSessionStore.isLoggedIn.first()
+            hasCheckedLogin = true
+            if (!loggedIn) {
                 navBackStack.navigate(Screen.Login) {
                     popUpTo(0) { inclusive = true }
                 }
