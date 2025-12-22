@@ -860,6 +860,36 @@ class ChatService(
             Log.e(TAG, "syncConversationToServer: Error - ${e.message}")
         }
     }
+    
+    // 同步删除对话到服务器
+    fun syncDeleteConversation(conversationId: Uuid) {
+        appScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken()
+                if (token == null) {
+                    Log.w(TAG, "syncDeleteConversation: No token available")
+                    return@launch
+                }
+                
+                Log.d(TAG, "syncDeleteConversation: Deleting $conversationId")
+                val request = Request.Builder()
+                    .url("https://rikkahub.zeabur.app/api/sync/conversations/$conversationId")
+                    .addHeader("Authorization", "Bearer $token")
+                    .delete()
+                    .build()
+                
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    Log.d(TAG, "syncDeleteConversation: Success")
+                } else {
+                    Log.w(TAG, "syncDeleteConversation: Failed ${response.code}")
+                }
+                response.close()
+            } catch (e: Exception) {
+                Log.e(TAG, "syncDeleteConversation: Error - ${e.message}")
+            }
+        }
+    }
 
     // 翻译消息
     fun translateMessage(
