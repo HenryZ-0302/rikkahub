@@ -285,7 +285,7 @@ fun PublicProviderPage(
                             OutlinedCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
-                                    navController.navigate(Screen.ProviderDetail(existingPublicProvider.id))
+                                    navController.navigate(Screen.SettingProviderDetail(existingPublicProvider.id.toString()))
                                 }
                             ) {
                                 Row(
