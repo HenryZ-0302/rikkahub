@@ -348,7 +348,19 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Text(
-                                                        text = msg.createdAt.take(10),
+                                                        text = try {
+                                                            // Try to parse as ISO date
+                                                            if (msg.createdAt.contains("-")) {
+                                                                msg.createdAt.take(10)
+                                                            } else {
+                                                                // Parse as timestamp and format
+                                                                val timestamp = msg.createdAt.toLongOrNull() ?: 0L
+                                                                java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+                                                                    .format(java.util.Date(timestamp))
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            msg.createdAt.take(10)
+                                                        },
                                                         style = MaterialTheme.typography.labelSmall
                                                     )
                                                 }
