@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Check
+import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.Info
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,9 +21,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ProviderSetting
+import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.UserSessionStore
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
+import me.rerere.rikkahub.ui.context.LocalNavController
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.koin.compose.koinInject
@@ -51,6 +54,7 @@ data class PublicProviderData(
 fun PublicProviderPage(
     vm: SettingVM = koinViewModel()
 ) {
+    val navController = LocalNavController.current
     val userSessionStore: UserSessionStore = koinInject()
     val okHttpClient: OkHttpClient = koinInject()
     val json: Json = koinInject()
@@ -281,7 +285,7 @@ fun PublicProviderPage(
                             OutlinedCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
-                                    // Navigate to provider detail
+                                    navController.navigate(Screen.ProviderDetail(existingPublicProvider.id))
                                 }
                             ) {
                                 Row(
@@ -290,16 +294,16 @@ fun PublicProviderPage(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            "已添加到服务商列表",
+                                            "配置模型",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Medium
                                         )
                                         Text(
-                                            "模型数量: ${existingPublicProvider.models.size}",
+                                            "已添加 ${existingPublicProvider.models.size} 个模型",
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                     }
-                                    Icon(Lucide.Check, null, tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Lucide.ChevronRight, null, tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }
