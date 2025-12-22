@@ -179,6 +179,16 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                 shape = CircleShape,
             )
 
+            // Public Provider Featured Card
+            PublicProviderCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp),
+                onClick = {
+                    navController.navigate(Screen.PublicProvider)
+                }
+            )
 
             LazyVerticalStaggeredGrid(
                 modifier = Modifier
@@ -563,3 +573,46 @@ private fun ProviderItem(
         }
     }
 }
+
+@Composable
+private fun PublicProviderCard(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier,
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AutoAIIcon(
+                name = "Public",
+                modifier = Modifier.size(48.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "公益提供商",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "每日20次免费额度",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
+            }
+            Tag(type = TagType.SUCCESS) {
+                Text("免费")
+            }
+        }
+    }
+}
+

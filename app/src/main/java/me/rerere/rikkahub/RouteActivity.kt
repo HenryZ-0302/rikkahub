@@ -95,6 +95,7 @@ import me.rerere.rikkahub.ui.pages.webview.WebViewPage
 import me.rerere.rikkahub.ui.pages.auth.LoginPage
 import me.rerere.rikkahub.ui.pages.auth.RegisterPage
 import me.rerere.rikkahub.ui.pages.admin.AdminPage
+import me.rerere.rikkahub.ui.pages.setting.PublicProviderPage
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.ui.theme.RikkahubTheme
 import okhttp3.OkHttpClient
@@ -386,6 +387,10 @@ class RouteActivity : ComponentActivity() {
                     composable<Screen.Admin> {
                         AdminPage()
                     }
+
+                    composable<Screen.PublicProvider> {
+                        PublicProviderPage()
+                    }
                 }
             }
         }
@@ -533,4 +538,7 @@ sealed interface Screen {
 
     @Serializable
     data object Admin : Screen
+
+    @Serializable
+    data object PublicProvider : Screen
 }
