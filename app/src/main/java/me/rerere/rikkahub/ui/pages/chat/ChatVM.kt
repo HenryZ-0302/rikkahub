@@ -490,6 +490,8 @@ class ChatVM(
         viewModelScope.launch {
             val conversationFull = conversationRepo.getConversationById(conversation.id) ?: return@launch
             conversationRepo.deleteConversation(conversationFull)
+            // Sync delete to server
+            chatService.syncDeleteConversation(conversation.id)
         }
     }
 
