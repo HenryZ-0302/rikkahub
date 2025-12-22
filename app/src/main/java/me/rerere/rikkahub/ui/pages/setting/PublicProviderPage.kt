@@ -65,9 +65,9 @@ fun PublicProviderPage(
     var error by remember { mutableStateOf<String?>(null) }
     var publicProviderData by remember { mutableStateOf<PublicProviderData?>(null) }
 
-    // Check if public provider already exists in settings
-    val existingPublicProvider = remember(settings.providers) {
-        settings.providers.find { it.name == "公益提供商" }
+    // Check if public provider already exists in settings - use derivedStateOf to react to changes
+    val existingPublicProvider by remember {
+        derivedStateOf { settings.providers.find { it.name == "公益提供商" } }
     }
     
     // Fetch public provider config
@@ -98,22 +98,17 @@ fun PublicProviderPage(
                         if (result.success && result.data != null) {
                             publicProviderData = result.data
                             
-                            // If enabled and not already added, automatically add to providers
-                            if (result.data.enabled && existingPublicProvider == null && 
-                                result.data.apiKey.isNotEmpty()) {
-                                val newProvider = ProviderSetting.OpenAI(
-                                    id = Uuid.parse("00000000-0000-0000-0000-000000000001"),
-                                    name = "公益提供商",
+                            // If provider exists, update API key and URL only (preserve models)
+                            val existing = settings.providers.find { it.name == "公益提供商" }
+                            if (existing != null && existing is ProviderSetting.OpenAI && result.data.enabled) {
+                                val updatedProvider = existing.copy(
                                     apiKey = result.data.apiKey,
-                                    baseUrl = result.data.baseUrl.ifEmpty { "https://api.openai.com/v1" },
-                                    enabled = true,
-                                    models = emptyList() // User will fetch models
+                                    baseUrl = result.data.baseUrl.ifEmpty { "https://api.openai.com/v1" }
                                 )
-                                vm.updateSettings(
-                                    settings.copy(
-                                        providers = listOf(newProvider) + settings.providers
-                                    )
-                                )
+                                val updatedProviders = settings.providers.map {
+                                    if (it.name == "公益提供商") updatedProvider else it
+                                }
+                                vm.updateSettings(settings.copy(providers = updatedProviders))
                             }
                         } else {
                             error = "公益提供商未启用"
@@ -279,9 +274,9 @@ fun PublicProviderPage(
                         }
                     }
                     
-                    // Provider Settings Link
-                    if (existingPublicProvider != null) {
-                        item {
+                    // Provider Settings Link or Add Button
+                    item {
+                        if (existingPublicProvider != null) {
                             OutlinedCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
@@ -305,6 +300,30 @@ fun PublicProviderPage(
                                     }
                                     Icon(Lucide.ChevronRight, null, tint = MaterialTheme.colorScheme.primary)
                                 }
+                            }
+                        } else if (publicProviderData != null && publicProviderData!!.enabled) {
+                            // Add button if provider not yet added
+                            Button(
+                                onClick = {
+                                    val newProvider = ProviderSetting.OpenAI(
+                                        id = Uuid.parse("00000000-0000-0000-0000-000000000001"),
+                                        name = "公益提供商",
+                                        apiKey = publicProviderData!!.apiKey,
+                                        baseUrl = publicProviderData!!.baseUrl.ifEmpty { "https://api.openai.com/v1" },
+                                        enabled = true,
+                                        models = emptyList()
+                                    )
+                                    vm.updateSettings(
+                                        settings.copy(
+                                            providers = listOf(newProvider) + settings.providers
+                                        )
+                                    )
+                                    // Navigate to detail page to add models
+                                    navController.navigate(Screen.SettingProviderDetail(newProvider.id.toString()))
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("添加公益提供商")
                             }
                         }
                     }

@@ -13,34 +13,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.lucide.Eye
 import com.composables.icons.lucide.EyeOff
 import com.composables.icons.lucide.Lucide
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.UserSessionStore
 import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.pages.setting.PublicProviderResponse
-import me.rerere.rikkahub.ui.pages.setting.SettingVM
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginPage(
-    viewModel: AuthViewModel = koinViewModel(),
-    settingVM: SettingVM = koinViewModel()
-) {
+fun LoginPage(viewModel: AuthViewModel = koinViewModel()) {
     val navController = LocalNavController.current
     val loginState by viewModel.loginState.collectAsStateWithLifecycle()
-    val settings by settingVM.settings.collectAsStateWithLifecycle()
-    val userSessionStore: UserSessionStore = koinInject()
-    val okHttpClient: OkHttpClient = koinInject()
-    val json: Json = koinInject()
-    val scope = rememberCoroutineScope()
     
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -48,56 +30,6 @@ fun LoginPage(
     
     LaunchedEffect(loginState) {
         if (loginState is AuthState.Success) {
-            // Sync public provider config
-            scope.launch(Dispatchers.IO) {
-                try {
-                    val token = userSessionStore.getToken()
-                    if (token != null) {
-                        val request = Request.Builder()
-                            .url("https://rikkahub.zeabur.app/api/public-provider")
-                            .addHeader("Authorization", "Bearer $token")
-                            .get()
-                            .build()
-                        
-                        val response = okHttpClient.newCall(request).execute()
-                        val responseBody = response.body?.string() ?: ""
-                        
-                        if (response.isSuccessful) {
-                            val result = json.decodeFromString<PublicProviderResponse>(responseBody)
-                            if (result.success && result.data != null && result.data.enabled && 
-                                result.data.apiKey.isNotEmpty()) {
-                                
-                                val existingProvider = settings.providers.find { it.name == "公益提供商" }
-                                val existingModels = existingProvider?.models ?: emptyList()
-                                
-                                val newProvider = ProviderSetting.OpenAI(
-                                    id = Uuid.parse("00000000-0000-0000-0000-000000000001"),
-                                    name = "公益提供商",
-                                    apiKey = result.data.apiKey,
-                                    baseUrl = result.data.baseUrl.ifEmpty { "https://api.openai.com/v1" },
-                                    enabled = true,
-                                    models = existingModels // Preserve user's models
-                                )
-                                
-                                val newProviders = if (existingProvider != null) {
-                                    // Update existing
-                                    settings.providers.map { 
-                                        if (it.name == "公益提供商") newProvider else it 
-                                    }
-                                } else {
-                                    // Add new at top
-                                    listOf(newProvider) + settings.providers
-                                }
-                                
-                                settingVM.updateSettings(settings.copy(providers = newProviders))
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Silently fail, don't block login flow
-                }
-            }
-            
             // Navigate to Chat screen after successful login
             navController.navigate(Screen.Chat(id = Uuid.random().toString())) {
                 popUpTo(0) { inclusive = true }
