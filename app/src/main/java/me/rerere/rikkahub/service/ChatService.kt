@@ -31,6 +31,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -808,27 +810,29 @@ class ChatService(
         try {
             val token = userSessionStore.getToken() ?: return
             
-            // Convert conversation to sync format
-            val syncData = buildString {
-                append("{\"conversations\":[{")
-                append("\"id\":\"${conversation.id}\",")
-                append("\"title\":\"${conversation.title.replace("\"", "\\\"")}\",")
-                append("\"nodes\":${json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), 
-                    kotlinx.serialization.json.buildJsonObject {
-                        conversation.messageNodes.forEach { node ->
-                            put(node.messages.firstOrNull()?.id?.toString() ?: "", kotlinx.serialization.json.buildJsonObject {
-                                put("role", kotlinx.serialization.json.JsonPrimitive(node.currentMessage.role.name.lowercase()))
-                                put("content", kotlinx.serialization.json.JsonPrimitive(node.currentMessage.toText()))
-                                put("createdAt", kotlinx.serialization.json.JsonPrimitive(System.currentTimeMillis().toString()))
-                            })
-                        }
-                    })},")
-                append("\"assistantId\":\"${conversation.assistantId}\",")
-                append("\"isPinned\":${conversation.isPinned},")
-                append("\"createdAt\":\"${conversation.createAt}\",")
-                append("\"updatedAt\":\"${conversation.updateAt}\"")
-                append("}]}")
+            // Build nodes JSON manually
+            val nodesJson = buildString {
+                append("{")
+                conversation.messageNodes.forEachIndexed { index, node ->
+                    if (index > 0) append(",")
+                    val msgId = node.messages.firstOrNull()?.id?.toString() ?: ""
+                    val role = node.currentMessage.role.name.lowercase()
+                    val content = node.currentMessage.toText()
+                        .replace("\\", "\\\\")
+                        .replace("\"", "\\\"")
+                        .replace("\n", "\\n")
+                        .replace("\r", "\\r")
+                        .replace("\t", "\\t")
+                    append("\"$msgId\":{\"role\":\"$role\",\"content\":\"$content\",\"createdAt\":\"${System.currentTimeMillis()}\"}")
+                }
+                append("}")
             }
+            
+            // Build sync data
+            val title = conversation.title
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+            val syncData = """{"conversations":[{"id":"${conversation.id}","title":"$title","nodes":$nodesJson,"assistantId":"${conversation.assistantId}","isPinned":${conversation.isPinned},"createdAt":"${conversation.createAt}","updatedAt":"${conversation.updateAt}"}]}"""
             
             val request = Request.Builder()
                 .url("https://rikkahub.zeabur.app/api/sync/conversations")

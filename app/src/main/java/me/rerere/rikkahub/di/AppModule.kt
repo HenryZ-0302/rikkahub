@@ -74,7 +74,7 @@ val appModule = module {
             mcpManager = get(),
             okHttpClient = get(),
             userSessionStore = get(),
-            json = get()
+            json = get<kotlinx.serialization.json.Json>()
         )
     }
 }

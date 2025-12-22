@@ -276,11 +276,12 @@ fun PublicProviderPage(
                     
                     // Provider Settings Link or Add Button
                     item {
-                        if (existingPublicProvider != null) {
+                        val provider = existingPublicProvider
+                        if (provider != null) {
                             OutlinedCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
-                                    navController.navigate(Screen.SettingProviderDetail(existingPublicProvider.id.toString()))
+                                    navController.navigate(Screen.SettingProviderDetail(provider.id.toString()))
                                 }
                             ) {
                                 Row(
@@ -294,7 +295,7 @@ fun PublicProviderPage(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Text(
-                                            "已添加 ${existingPublicProvider.models.size} 个模型",
+                                            "已添加 ${provider.models.size} 个模型",
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                     }
