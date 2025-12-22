@@ -36,8 +36,8 @@ fun ProviderConfigure(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = modifier
     ) {
-        // Type
-        if (!provider.builtIn) {
+        // Type - hide for public provider
+        if (!provider.builtIn && provider.name != "公益提供商") {
             SingleChoiceSegmentedButtonRow(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -123,30 +123,34 @@ private fun ColumnScope.ProviderConfigureOpenAI(
             Text(stringResource(id = R.string.setting_provider_page_name))
         },
         modifier = Modifier.fillMaxWidth(),
+        enabled = provider.name != "公益提供商" // Disable editing name for public provider
     )
 
-    OutlinedTextField(
-        value = provider.apiKey,
-        onValueChange = {
-            onEdit(provider.copy(apiKey = it.trim()))
-        },
-        label = {
-            Text(stringResource(id = R.string.setting_provider_page_api_key))
-        },
-        modifier = Modifier.fillMaxWidth(),
-        maxLines = 3,
-    )
+    // Hide API key and URL for public provider
+    if (provider.name != "公益提供商") {
+        OutlinedTextField(
+            value = provider.apiKey,
+            onValueChange = {
+                onEdit(provider.copy(apiKey = it.trim()))
+            },
+            label = {
+                Text(stringResource(id = R.string.setting_provider_page_api_key))
+            },
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 3,
+        )
 
-    OutlinedTextField(
-        value = provider.baseUrl,
-        onValueChange = {
-            onEdit(provider.copy(baseUrl = it.trim()))
-        },
-        label = {
-            Text(stringResource(id = R.string.setting_provider_page_api_base_url))
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
+        OutlinedTextField(
+            value = provider.baseUrl,
+            onValueChange = {
+                onEdit(provider.copy(baseUrl = it.trim()))
+            },
+            label = {
+                Text(stringResource(id = R.string.setting_provider_page_api_base_url))
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 
     if (!provider.useResponseApi) {
         OutlinedTextField(

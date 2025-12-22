@@ -99,10 +99,11 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
     }
 
     val filteredProviders = remember(settings.providers, searchQuery) {
+        val baseProviders = settings.providers.filter { it.name != "公益提供商" }
         if (searchQuery.isBlank()) {
-            settings.providers
+            baseProviders
         } else {
-            settings.providers.filter { provider ->
+            baseProviders.filter { provider ->
                 provider.name.contains(searchQuery, ignoreCase = true)
             }
         }
