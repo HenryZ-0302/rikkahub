@@ -34,12 +34,7 @@ data class UserData(
     val id: String,
     val email: String,
     val username: String,
-    val admin: AdminData? = null
-)
-
-@Serializable
-data class AdminData(
-    val id: String
+    val isAdmin: Boolean = false
 )
 
 sealed class AuthState {
@@ -94,7 +89,7 @@ class AuthViewModel(
                             username = authResponse.data.user.username,
                             token = authResponse.data.token,
                             refreshToken = authResponse.data.refreshToken,
-                            isAdmin = authResponse.data.user.admin != null
+                            isAdmin = authResponse.data.user.isAdmin
                         )
                         _loginState.value = AuthState.Success("Login successful")
                     } else {
@@ -133,7 +128,7 @@ class AuthViewModel(
                             username = authResponse.data.user.username,
                             token = authResponse.data.token,
                             refreshToken = authResponse.data.refreshToken,
-                            isAdmin = authResponse.data.user.admin != null
+                            isAdmin = authResponse.data.user.isAdmin
                         )
                         _registerState.value = AuthState.Success("Registration successful")
                     } else {
