@@ -70,11 +70,16 @@ import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.toMessageNode
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
+import me.rerere.rikkahub.data.datastore.UserSessionStore
 import me.rerere.rikkahub.utils.JsonInstantPretty
 import me.rerere.rikkahub.utils.applyPlaceholders
 import me.rerere.rikkahub.utils.deleteChatFiles
 import me.rerere.search.SearchService
 import me.rerere.search.SearchServiceOptions
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -110,6 +115,9 @@ class ChatService(
     private val providerManager: ProviderManager,
     private val localTools: LocalTools,
     val mcpManager: McpManager,
+    private val okHttpClient: OkHttpClient,
+    private val userSessionStore: UserSessionStore,
+    private val json: Json,
 ) {
     // 存储每个对话的状态
     private val conversations = ConcurrentHashMap<Uuid, MutableStateFlow<Conversation>>()
@@ -368,6 +376,12 @@ class ChatService(
 
             // check invalid messages
             checkInvalidMessages(conversationId)
+            
+            // Track public provider usage if applicable
+            val provider = model.findProvider(settings.providers)
+            if (provider?.name == "公益提供商") {
+                trackPublicProviderUsage()
+            }
 
             // start generating
             generationHandler.generateText(
@@ -782,8 +796,50 @@ class ChatService(
             } else {
                 conversationRepo.updateConversation(updatedConversation)
             }
+            // Sync to server
+            syncConversationToServer(updatedConversation)
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+    
+    // 同步对话到服务器
+    private suspend fun syncConversationToServer(conversation: Conversation) {
+        try {
+            val token = userSessionStore.getToken() ?: return
+            
+            // Convert conversation to sync format
+            val syncData = buildString {
+                append("{\"conversations\":[{")
+                append("\"id\":\"${conversation.id}\",")
+                append("\"title\":\"${conversation.title.replace("\"", "\\\"")}\",")
+                append("\"nodes\":${json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), 
+                    kotlinx.serialization.json.buildJsonObject {
+                        conversation.messageNodes.forEach { node ->
+                            put(node.messages.firstOrNull()?.id?.toString() ?: "", kotlinx.serialization.json.buildJsonObject {
+                                put("role", kotlinx.serialization.json.JsonPrimitive(node.currentMessage.role.name.lowercase()))
+                                put("content", kotlinx.serialization.json.JsonPrimitive(node.currentMessage.toText()))
+                                put("createdAt", kotlinx.serialization.json.JsonPrimitive(System.currentTimeMillis().toString()))
+                            })
+                        }
+                    })},")
+                append("\"assistantId\":\"${conversation.assistantId}\",")
+                append("\"isPinned\":${conversation.isPinned},")
+                append("\"createdAt\":\"${conversation.createAt}\",")
+                append("\"updatedAt\":\"${conversation.updateAt}\"")
+                append("}]}")
+            }
+            
+            val request = Request.Builder()
+                .url("https://rikkahub.zeabur.app/api/sync/conversations")
+                .addHeader("Authorization", "Bearer $token")
+                .addHeader("Content-Type", "application/json")
+                .post(syncData.toRequestBody("application/json".toMediaType()))
+                .build()
+            
+            okHttpClient.newCall(request).execute().close()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to sync conversation to server: ${e.message}")
         }
     }
 
@@ -880,5 +936,33 @@ class ChatService(
             TAG,
             "cleanupConversation: removed $conversationId (current references: ${conversationReferences.size}, generation jobs: ${_generationJobs.value.size})"
         )
+    }
+    
+    // 追踪公益提供商使用量
+    private suspend fun trackPublicProviderUsage() {
+        try {
+            val token = userSessionStore.getToken() ?: return
+            
+            val request = Request.Builder()
+                .url("https://rikkahub.zeabur.app/api/public-provider/use")
+                .addHeader("Authorization", "Bearer $token")
+                .addHeader("Content-Type", "application/json")
+                .post("{}".toRequestBody("application/json".toMediaType()))
+                .build()
+            
+            val response = okHttpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                val body = response.body?.string() ?: ""
+                if (response.code == 429) {
+                    throw IllegalStateException("今日使用额度已用尽")
+                }
+                Log.w(TAG, "Failed to track public provider usage: ${response.code} - $body")
+            }
+            response.close()
+        } catch (e: IllegalStateException) {
+            throw e // Rethrow quota exceeded error
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to track public provider usage: ${e.message}")
+        }
     }
 }
