@@ -798,8 +798,10 @@ class ChatService(
             } else {
                 conversationRepo.updateConversation(updatedConversation)
             }
-            // Sync to server
-            syncConversationToServer(updatedConversation)
+            // Sync to server asynchronously
+            appScope.launch(Dispatchers.IO) {
+                syncConversationToServer(updatedConversation)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -808,7 +810,13 @@ class ChatService(
     // 同步对话到服务器
     private suspend fun syncConversationToServer(conversation: Conversation) {
         try {
-            val token = userSessionStore.getToken() ?: return
+            val token = userSessionStore.getToken()
+            if (token == null) {
+                Log.w(TAG, "syncConversationToServer: No token available")
+                return
+            }
+            
+            Log.d(TAG, "syncConversationToServer: Syncing conversation ${conversation.id}")
             
             // Build nodes JSON manually
             val nodesJson = buildString {
@@ -841,9 +849,15 @@ class ChatService(
                 .post(syncData.toRequestBody("application/json".toMediaType()))
                 .build()
             
-            okHttpClient.newCall(request).execute().close()
+            val response = okHttpClient.newCall(request).execute()
+            if (response.isSuccessful) {
+                Log.d(TAG, "syncConversationToServer: Success")
+            } else {
+                Log.w(TAG, "syncConversationToServer: Failed ${response.code} - ${response.body?.string()}")
+            }
+            response.close()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to sync conversation to server: ${e.message}")
+            Log.e(TAG, "syncConversationToServer: Error - ${e.message}")
         }
     }
 
@@ -944,29 +958,38 @@ class ChatService(
     
     // 追踪公益提供商使用量
     private suspend fun trackPublicProviderUsage() {
-        try {
-            val token = userSessionStore.getToken() ?: return
-            
-            val request = Request.Builder()
-                .url("https://rikkahub.zeabur.app/api/public-provider/use")
-                .addHeader("Authorization", "Bearer $token")
-                .addHeader("Content-Type", "application/json")
-                .post("{}".toRequestBody("application/json".toMediaType()))
-                .build()
-            
-            val response = okHttpClient.newCall(request).execute()
-            if (!response.isSuccessful) {
-                val body = response.body?.string() ?: ""
-                if (response.code == 429) {
-                    throw IllegalStateException("今日使用额度已用尽")
+        kotlinx.coroutines.withContext(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken()
+                if (token == null) {
+                    Log.w(TAG, "trackPublicProviderUsage: No token available")
+                    return@withContext
                 }
-                Log.w(TAG, "Failed to track public provider usage: ${response.code} - $body")
+                
+                Log.d(TAG, "trackPublicProviderUsage: Calling API")
+                val request = Request.Builder()
+                    .url("https://rikkahub.zeabur.app/api/public-provider/use")
+                    .addHeader("Authorization", "Bearer $token")
+                    .addHeader("Content-Type", "application/json")
+                    .post("{}".toRequestBody("application/json".toMediaType()))
+                    .build()
+                
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    Log.d(TAG, "trackPublicProviderUsage: Success")
+                } else {
+                    val body = response.body?.string() ?: ""
+                    Log.w(TAG, "trackPublicProviderUsage: Failed ${response.code} - $body")
+                    if (response.code == 429) {
+                        throw IllegalStateException("今日使用额度已用尽")
+                    }
+                }
+                response.close()
+            } catch (e: IllegalStateException) {
+                throw e // Rethrow quota exceeded error
+            } catch (e: Exception) {
+                Log.e(TAG, "trackPublicProviderUsage: Error - ${e.message}")
             }
-            response.close()
-        } catch (e: IllegalStateException) {
-            throw e // Rethrow quota exceeded error
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to track public provider usage: ${e.message}")
         }
     }
 }
