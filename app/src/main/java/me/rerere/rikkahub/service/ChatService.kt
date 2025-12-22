@@ -818,12 +818,13 @@ class ChatService(
             
             Log.d(TAG, "syncConversationToServer: Syncing conversation ${conversation.id}")
             
-            // Build nodes JSON manually
+            // Build nodes JSON manually - use index offset to preserve message order
+            val baseTime = System.currentTimeMillis() - (conversation.messageNodes.size * 1000L)
             val nodesJson = buildString {
                 append("{")
                 conversation.messageNodes.forEachIndexed { index, node ->
                     if (index > 0) append(",")
-                    val msgId = node.messages.firstOrNull()?.id?.toString() ?: ""
+                    val msgId = node.messages.firstOrNull()?.id?.toString() ?: index.toString()
                     val role = node.currentMessage.role.name.lowercase()
                     val content = node.currentMessage.toText()
                         .replace("\\", "\\\\")
@@ -831,7 +832,9 @@ class ChatService(
                         .replace("\n", "\\n")
                         .replace("\r", "\\r")
                         .replace("\t", "\\t")
-                    append("\"$msgId\":{\"role\":\"$role\",\"content\":\"$content\",\"createdAt\":\"${System.currentTimeMillis()}\"}")
+                    // Use index offset to ensure correct message ordering
+                    val msgTime = baseTime + (index * 1000L)
+                    append("\"$msgId\":{\"role\":\"$role\",\"content\":\"$content\",\"createdAt\":\"$msgTime\"}")
                 }
                 append("}")
             }
@@ -879,10 +882,11 @@ class ChatService(
                     .build()
                 
                 val response = okHttpClient.newCall(request).execute()
+                val body = response.body?.string() ?: ""
                 if (response.isSuccessful) {
-                    Log.d(TAG, "syncDeleteConversation: Success")
+                    Log.d(TAG, "syncDeleteConversation: Success - $body")
                 } else {
-                    Log.w(TAG, "syncDeleteConversation: Failed ${response.code}")
+                    Log.w(TAG, "syncDeleteConversation: Failed ${response.code} - $body")
                 }
                 response.close()
             } catch (e: Exception) {
