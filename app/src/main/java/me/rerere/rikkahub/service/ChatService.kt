@@ -826,15 +826,45 @@ class ChatService(
                     if (index > 0) append(",")
                     val msgId = node.messages.firstOrNull()?.id?.toString() ?: index.toString()
                     val role = node.currentMessage.role.name.lowercase()
-                    val content = node.currentMessage.toText()
-                        .replace("\\", "\\\\")
-                        .replace("\"", "\\\"")
-                        .replace("\n", "\\n")
-                        .replace("\r", "\\r")
-                        .replace("\t", "\\t")
+                    
+                    // Build parts array with text and image support
+                    val partsJson = buildString {
+                        append("[")
+                        var firstPart = true
+                        node.currentMessage.parts.forEach { part ->
+                            when (part) {
+                                is me.rerere.ai.ui.UIMessagePart.Text -> {
+                                    if (part.text.isNotBlank()) {
+                                        if (!firstPart) append(",")
+                                        firstPart = false
+                                        val escapedText = part.text
+                                            .replace("\\", "\\\\")
+                                            .replace("\"", "\\\"")
+                                            .replace("\n", "\\n")
+                                            .replace("\r", "\\r")
+                                            .replace("\t", "\\t")
+                                        append("{\"text\":\"$escapedText\"}")
+                                    }
+                                }
+                                is me.rerere.ai.ui.UIMessagePart.Image -> {
+                                    if (part.url.isNotBlank()) {
+                                        if (!firstPart) append(",")
+                                        firstPart = false
+                                        val escapedUrl = part.url
+                                            .replace("\\", "\\\\")
+                                            .replace("\"", "\\\"")
+                                        append("{\"url\":\"$escapedUrl\"}")
+                                    }
+                                }
+                                else -> { /* Skip other part types for now */ }
+                            }
+                        }
+                        append("]")
+                    }
+                    
                     // Use index offset to ensure correct message ordering
                     val msgTime = baseTime + (index * 1000L)
-                    append("\"$msgId\":{\"role\":\"$role\",\"content\":\"$content\",\"createdAt\":\"$msgTime\"}")
+                    append("\"$msgId\":{\"role\":\"$role\",\"parts\":$partsJson,\"createdAt\":\"$msgTime\"}")
                 }
                 append("}")
             }
