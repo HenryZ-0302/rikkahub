@@ -295,12 +295,18 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                         if (showDeletedExpanded) {
                                             items(deletedConversations) { conv ->
                                                 Card(
-                                                    modifier = Modifier.fillMaxWidth().clickable {
-                                                        selectedConversation = conv
-                                                        viewModel.loadConversationMessages(conv.id)
-                                                    },
+                                                    modifier = Modifier
+                                                        .fillMaxWidth(0.9f)
+                                                        .padding(start = 16.dp)
+                                                        .clickable {
+                                                            selectedConversation = conv
+                                                            viewModel.loadConversationMessages(conv.id)
+                                                        },
                                                     colors = CardDefaults.cardColors(
-                                                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                                                    ),
+                                                    border = androidx.compose.foundation.BorderStroke(
+                                                        1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
                                                     )
                                                 ) {
                                                     Column(modifier = Modifier.padding(12.dp)) {
