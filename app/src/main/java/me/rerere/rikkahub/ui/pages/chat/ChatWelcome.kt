@@ -114,19 +114,19 @@ private fun SuggestionCard(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp),
+            .height(100.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center
         ) {
             suggestion.icon()
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = suggestion.title,
                 style = MaterialTheme.typography.bodyMedium,

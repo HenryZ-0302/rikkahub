@@ -430,9 +430,9 @@ private fun SharedTransitionScope.ChatListNormal(
 
             val captureProgress = LocalScrollCaptureInProgress.current
 
-            // 消息快速跳转 - 只在有消息时显示，欢迎页面不显示
+            // 消息快速跳转
             MessageJumper(
-                show = isRecentScroll && !state.isScrollInProgress && settings.displaySetting.showMessageJumper && !captureProgress && conversation.messageNodes.isNotEmpty(),
+                show = isRecentScroll && !state.isScrollInProgress && settings.displaySetting.showMessageJumper && !captureProgress,
                 onLeft = settings.displaySetting.messageJumperOnLeft,
                 scope = scope,
                 state = state
