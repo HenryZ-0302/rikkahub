@@ -215,6 +215,10 @@ class RouteActivity : ComponentActivity() {
                     showCloseButton = true,
                 )
                 TTSController()
+                
+                // 公告检查 - 登录后弹出
+                me.rerere.rikkahub.ui.components.ui.AnnouncementChecker(isLoggedIn = isLoggedIn)
+                
                 NavHost(
                     modifier = Modifier
                         .fillMaxSize()

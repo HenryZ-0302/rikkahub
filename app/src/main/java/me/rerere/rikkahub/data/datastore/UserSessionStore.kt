@@ -94,4 +94,23 @@ class UserSessionStore(private val context: Context) {
     fun getAuthHeader(): Flow<String?> = token.map { t ->
         t?.let { "Bearer $it" }
     }
+    
+    // 公告相关
+    companion object AnnouncementKeys {
+        private val KEY_READ_ANNOUNCEMENT_VERSION = stringPreferencesKey("read_announcement_version")
+    }
+    
+    val readAnnouncementVersion: Flow<String?> = context.userSessionDataStore.data.map { prefs ->
+        prefs[AnnouncementKeys.KEY_READ_ANNOUNCEMENT_VERSION]
+    }
+    
+    suspend fun getReadAnnouncementVersion(): String? {
+        return context.userSessionDataStore.data.first()[AnnouncementKeys.KEY_READ_ANNOUNCEMENT_VERSION]
+    }
+    
+    suspend fun saveReadAnnouncementVersion(version: String) {
+        context.userSessionDataStore.edit { prefs ->
+            prefs[AnnouncementKeys.KEY_READ_ANNOUNCEMENT_VERSION] = version
+        }
+    }
 }

@@ -127,6 +127,11 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                             PublicProviderConfigCard(viewModel = viewModel)
                         }
                         
+                        // Announcement config
+                        item {
+                            AnnouncementConfigCard(viewModel = viewModel)
+                        }
+                        
                         item {
                             Text(
                                 "用户列表 (${state.data.size})",
@@ -612,6 +617,79 @@ private fun PublicProviderConfigCard(viewModel: AdminViewModel) {
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AnnouncementConfigCard(viewModel: AdminViewModel) {
+    val content by viewModel.announcementContent.collectAsStateWithLifecycle()
+    val readTime by viewModel.announcementReadTime.collectAsStateWithLifecycle()
+    var editedContent by remember(content) { mutableStateOf(content) }
+    var editedReadTime by remember(readTime) { mutableStateOf(readTime) }
+    
+    LaunchedEffect(Unit) {
+        viewModel.loadAnnouncementConfig()
+    }
+    
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "公告设置",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            OutlinedTextField(
+                value = editedContent,
+                onValueChange = { editedContent = it },
+                label = { Text("公告内容 (支持Markdown)") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 120.dp),
+                maxLines = 8
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("强制阅读时间: ${editedReadTime}秒")
+                Slider(
+                    value = editedReadTime.toFloat(),
+                    onValueChange = { editedReadTime = it.toInt() },
+                    valueRange = 0f..30f,
+                    steps = 29,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Button(
+                onClick = {
+                    viewModel.updateAnnouncementContent(editedContent)
+                    viewModel.updateAnnouncementReadTime(editedReadTime)
+                    viewModel.saveAnnouncement()
+                },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("保存公告")
+            }
+            
+            Text(
+                text = "保存后会生成新版本号，所有用户下次打开APP时会看到公告",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

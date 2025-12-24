@@ -143,6 +143,13 @@ class AdminViewModel(
     private val _publicProviderBaseUrl = MutableStateFlow("https://api.openai.com/v1")
     val publicProviderBaseUrl: StateFlow<String> = _publicProviderBaseUrl.asStateFlow()
     
+    // 公告相关
+    private val _announcementContent = MutableStateFlow("")
+    val announcementContent: StateFlow<String> = _announcementContent.asStateFlow()
+    
+    private val _announcementReadTime = MutableStateFlow(5)
+    val announcementReadTime: StateFlow<Int> = _announcementReadTime.asStateFlow()
+    
     private val _conversationMessages = MutableStateFlow<UiState<List<ConversationMessage>>>(UiState.Idle)
     val conversationMessages: StateFlow<UiState<List<ConversationMessage>>> = _conversationMessages.asStateFlow()
     
@@ -428,5 +435,76 @@ class AdminViewModel(
     
     fun clearUserConversations() {
         _userConversations.value = UiState.Idle
+    }
+    
+    // 公告相关方法
+    fun updateAnnouncementContent(content: String) {
+        _announcementContent.value = content
+    }
+    
+    fun updateAnnouncementReadTime(time: Int) {
+        _announcementReadTime.value = time
+    }
+    
+    fun saveAnnouncement() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: throw Exception("Not logged in")
+                
+                // 生成新版本号
+                val version = System.currentTimeMillis().toString()
+                
+                // 保存公告内容
+                saveConfig(token, "announcement_content", _announcementContent.value)
+                // 保存阅读时间
+                saveConfig(token, "announcement_read_time", _announcementReadTime.value.toString())
+                // 保存版本号
+                saveConfig(token, "announcement_version", version)
+                
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    private suspend fun saveConfig(token: String, key: String, value: String) {
+        val requestBody = """{"key":"$key","value":"${value.replace("\"", "\\\"").replace("\n", "\\n")}"}"""
+        val request = Request.Builder()
+            .url("$BASE_URL/admin/config")
+            .addHeader("Authorization", "Bearer $token")
+            .addHeader("Content-Type", "application/json")
+            .post(requestBody.toRequestBody("application/json".toMediaType()))
+            .build()
+        
+        okHttpClient.newCall(request).execute()
+    }
+    
+    fun loadAnnouncementConfig() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val token = userSessionStore.getToken() ?: return@launch
+                val request = Request.Builder()
+                    .url("$BASE_URL/admin/config")
+                    .addHeader("Authorization", "Bearer $token")
+                    .get()
+                    .build()
+                
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val body = response.body?.string() ?: return@launch
+                    val configResponse = json.decodeFromString<ConfigResponse>(body)
+                    if (configResponse.success && configResponse.data != null) {
+                        configResponse.data.forEach { item ->
+                            when (item.key) {
+                                "announcement_content" -> _announcementContent.value = item.value
+                                "announcement_read_time" -> _announcementReadTime.value = item.value.toIntOrNull() ?: 5
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
