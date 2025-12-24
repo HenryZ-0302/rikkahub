@@ -26,6 +26,7 @@ class UserSessionStore(private val context: Context) {
         private val KEY_TOKEN = stringPreferencesKey("token")
         private val KEY_REFRESH_TOKEN = stringPreferencesKey("refresh_token")
         private val KEY_IS_ADMIN = booleanPreferencesKey("is_admin")
+        private val KEY_READ_ANNOUNCEMENT_VERSION = stringPreferencesKey("read_announcement_version")
     }
     
     val isLoggedIn: Flow<Boolean> = context.userSessionDataStore.data.map { prefs ->
@@ -96,21 +97,17 @@ class UserSessionStore(private val context: Context) {
     }
     
     // 公告相关
-    companion object AnnouncementKeys {
-        private val KEY_READ_ANNOUNCEMENT_VERSION = stringPreferencesKey("read_announcement_version")
-    }
-    
     val readAnnouncementVersion: Flow<String?> = context.userSessionDataStore.data.map { prefs ->
-        prefs[AnnouncementKeys.KEY_READ_ANNOUNCEMENT_VERSION]
+        prefs[KEY_READ_ANNOUNCEMENT_VERSION]
     }
     
     suspend fun getReadAnnouncementVersion(): String? {
-        return context.userSessionDataStore.data.first()[AnnouncementKeys.KEY_READ_ANNOUNCEMENT_VERSION]
+        return context.userSessionDataStore.data.first()[KEY_READ_ANNOUNCEMENT_VERSION]
     }
     
     suspend fun saveReadAnnouncementVersion(version: String) {
         context.userSessionDataStore.edit { prefs ->
-            prefs[AnnouncementKeys.KEY_READ_ANNOUNCEMENT_VERSION] = version
+            prefs[KEY_READ_ANNOUNCEMENT_VERSION] = version
         }
     }
 }
