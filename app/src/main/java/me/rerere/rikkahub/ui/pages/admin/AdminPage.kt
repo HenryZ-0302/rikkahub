@@ -29,6 +29,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import me.rerere.rikkahub.ui.components.ui.ImagePreviewDialog
+import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -407,9 +408,9 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                                         when (part.type) {
                                                             "text" -> {
                                                                 part.text?.takeIf { it.trim().isNotEmpty() }?.let { text ->
-                                                                    Text(
-                                                                        text = text.trim(),
-                                                                        style = MaterialTheme.typography.bodySmall
+                                                                    MarkdownBlock(
+                                                                        content = text.trim(),
+                                                                        modifier = Modifier.fillMaxWidth()
                                                                     )
                                                                 }
                                                             }
@@ -432,9 +433,9 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                                     }
                                                 } else if (msg.content.trim().isNotEmpty()) {
                                                     // Fallback to content field for backward compatibility
-                                                    Text(
-                                                        text = msg.content.trim(),
-                                                        style = MaterialTheme.typography.bodySmall
+                                                    MarkdownBlock(
+                                                        content = msg.content.trim(),
+                                                        modifier = Modifier.fillMaxWidth()
                                                     )
                                                 }
                                             }
