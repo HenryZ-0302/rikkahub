@@ -11,7 +11,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import me.rerere.rikkahub.ui.components.ui.liquidglass.LiquidIconButton
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
@@ -415,7 +417,7 @@ private fun TopBar(
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         navigationIcon = {
             if (!bigScreen) {
-                IconButton(
+                LiquidIconButton(
                     onClick = {
                         scope.launch { drawerState.open() }
                     }
@@ -461,7 +463,7 @@ private fun TopBar(
             }
         },
         actions = {
-            IconButton(
+            LiquidIconButton(
                 onClick = {
                     onClickMenu()
                 }
@@ -469,7 +471,9 @@ private fun TopBar(
                 Icon(if (previewMode) Lucide.X else Lucide.List, "Chat Options")
             }
 
-            IconButton(
+            Spacer(modifier = Modifier.width(4.dp))
+
+            LiquidIconButton(
                 onClick = {
                     onNewChat()
                 }

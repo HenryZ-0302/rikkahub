@@ -164,6 +164,10 @@ dependencies {
     implementation(libs.androidx.material3.adaptive)
     implementation(libs.androidx.material3.adaptive.layout)
 
+    // Liquid Glass Effect (Android 13+)
+    implementation("io.github.kyant0:backdrop:1.0.2")
+    implementation("io.github.kyant0:capsule:2.1.2")
+
     // Navigation 2
     implementation(libs.androidx.navigation2)
 
