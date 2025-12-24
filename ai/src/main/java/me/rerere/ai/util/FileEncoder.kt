@@ -45,6 +45,76 @@ fun UIMessagePart.Image.encodeBase64(withPrefix: Boolean = true): Result<String>
     }
 }
 
+/**
+ * 专门用于同步到服务器的压缩版本
+ * 将图片压缩到最大512px，质量50%，大幅减少数据量
+ */
+fun UIMessagePart.Image.encodeBase64ForSync(maxSize: Int = 512, quality: Int = 50): Result<String> = runCatching {
+    when {
+        this.url.startsWith("file://") -> {
+            val filePath =
+                this.url.toUri().path ?: throw IllegalArgumentException("Invalid file URI: ${this.url}")
+            val file = File(filePath)
+            if (!file.exists()) {
+                throw IllegalArgumentException("File does not exist: ${this.url}")
+            }
+            
+            // 读取并压缩图片
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeFile(file.absolutePath, options)
+            
+            // 计算采样率
+            val sampleSize = calculateInSampleSize(options, maxSize, maxSize)
+            options.inJustDecodeBounds = false
+            options.inSampleSize = sampleSize
+            
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath, options)
+                ?: throw IllegalArgumentException("Failed to decode image: ${this.url}")
+            
+            // 如果还是太大，继续缩放
+            val scaledBitmap = if (bitmap.width > maxSize || bitmap.height > maxSize) {
+                val scale = minOf(maxSize.toFloat() / bitmap.width, maxSize.toFloat() / bitmap.height)
+                val newWidth = (bitmap.width * scale).toInt()
+                val newHeight = (bitmap.height * scale).toInt()
+                Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true).also {
+                    if (it != bitmap) bitmap.recycle()
+                }
+            } else {
+                bitmap
+            }
+            
+            // 压缩为JPEG并转base64
+            val outputStream = java.io.ByteArrayOutputStream()
+            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+            scaledBitmap.recycle()
+            
+            val encoded = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+            "data:image/jpeg;base64,$encoded"
+        }
+
+        this.url.startsWith("data:") -> url
+        this.url.startsWith("http:") -> url
+        else -> throw IllegalArgumentException("Unsupported URL format: $url")
+    }
+}
+
+private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+    val height = options.outHeight
+    val width = options.outWidth
+    var inSampleSize = 1
+
+    if (height > reqHeight || width > reqWidth) {
+        val halfHeight = height / 2
+        val halfWidth = width / 2
+        while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+            inSampleSize *= 2
+        }
+    }
+    return inSampleSize
+}
+
 fun UIMessagePart.Video.encodeBase64(withPrefix: Boolean = true): Result<String> = runCatching {
     when {
         this.url.startsWith("file://") -> {
