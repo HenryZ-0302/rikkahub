@@ -5,6 +5,8 @@ import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.app.ActivityCompat
@@ -82,8 +84,10 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 import java.time.Instant
 import java.util.Locale
+import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
@@ -848,12 +852,15 @@ class ChatService(
                                 }
                                 is me.rerere.ai.ui.UIMessagePart.Image -> {
                                     if (part.url.isNotBlank()) {
-                                        if (!firstPart) append(",")
-                                        firstPart = false
-                                        val escapedUrl = part.url
-                                            .replace("\\", "\\\\")
-                                            .replace("\"", "\\\"")
-                                        append("{\"url\":\"$escapedUrl\"}")
+                                        val imageUrl = convertLocalImageToBase64(part.url)
+                                        if (imageUrl != null) {
+                                            if (!firstPart) append(",")
+                                            firstPart = false
+                                            val escapedUrl = imageUrl
+                                                .replace("\\", "\\\\")
+                                                .replace("\"", "\\\"")
+                                            append("{\"url\":\"$escapedUrl\"}")
+                                        }
                                     }
                                 }
                                 else -> { /* Skip other part types for now */ }
@@ -1054,6 +1061,53 @@ class ChatService(
             } catch (e: Exception) {
                 Log.e(TAG, "trackPublicProviderUsage: Error - ${e.message}")
             }
+        }
+    }
+    private fun convertLocalImageToBase64(url: String): String? {
+        if (!url.startsWith("file://")) return url
+        
+        return try {
+            val filePath = url.substringAfter("file://")
+            val file = File(filePath)
+            if (file.exists()) {
+                // Decode bitmap options to get dimensions
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+                BitmapFactory.decodeFile(filePath, options)
+                
+                // Calculate scale factor (limit to max 1024px)
+                val maxDimension = 1024
+                var inSampleSize = 1
+                if (options.outHeight > maxDimension || options.outWidth > maxDimension) {
+                    val halfHeight = options.outHeight / 2
+                    val halfWidth = options.outWidth / 2
+                    while (halfHeight / inSampleSize >= maxDimension && halfWidth / inSampleSize >= maxDimension) {
+                        inSampleSize *= 2
+                    }
+                }
+                
+                // Decode with sample size
+                options.inJustDecodeBounds = false
+                options.inSampleSize = inSampleSize
+                val bitmap = BitmapFactory.decodeFile(filePath, options) ?: return null
+                
+                // Compress to JPEG with 70% quality
+                val outputStream = java.io.ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+                val bytes = outputStream.toByteArray()
+                
+                // Release bitmap
+                bitmap.recycle()
+                
+                val base64 = Base64.getEncoder().encodeToString(bytes)
+                "data:image/jpeg;base64,$base64"
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 }

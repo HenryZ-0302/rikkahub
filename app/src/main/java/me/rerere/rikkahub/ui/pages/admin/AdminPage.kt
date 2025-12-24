@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import me.rerere.rikkahub.ui.components.ui.ImagePreviewDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +41,7 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
     var selectedUser by remember { mutableStateOf<AdminUser?>(null) }
     var selectedConversation by remember { mutableStateOf<AdminConversation?>(null) }
     var userToDelete by remember { mutableStateOf<AdminUser?>(null) }
+    var previewImageUrl by remember { mutableStateOf<String?>(null) }
     
     // Delete user confirmation dialog
     if (userToDelete != null) {
@@ -420,7 +422,8 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                                                                             .fillMaxWidth()
                                                                             .heightIn(max = 200.dp)
                                                                             .padding(vertical = 4.dp)
-                                                                            .clip(RoundedCornerShape(8.dp)),
+                                                                            .clip(RoundedCornerShape(8.dp))
+                                                                            .clickable { previewImageUrl = url },
                                                                         contentScale = ContentScale.Fit
                                                                     )
                                                                 }
@@ -454,6 +457,13 @@ fun AdminPage(viewModel: AdminViewModel = koinViewModel()) {
                     viewModel.clearConversationMessages()
                 }) { Text("关闭") }
             }
+        )
+    }
+
+    if (previewImageUrl != null) {
+        ImagePreviewDialog(
+            images = listOf(previewImageUrl!!),
+            onDismissRequest = { previewImageUrl = null }
         )
     }
 }
