@@ -258,11 +258,13 @@ class BackupVM(
             val messageNodes = cloudConv.nodes?.let { nodesElement ->
                 try {
                     val nodesObj = nodesElement.jsonObject
+                    // 解析所有消息并按createdAt排序
                     nodesObj.entries.mapNotNull { (msgId, msgData) ->
                         try {
                             val msgObj = msgData.jsonObject
                             val role = msgObj["role"]?.jsonPrimitive?.contentOrNull ?: "user"
                             val partsArray = msgObj["parts"]?.jsonArray ?: return@mapNotNull null
+                            val createdAt = msgObj["createdAt"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 0L
                             
                             // 解析parts
                             val parts = partsArray.mapNotNull { partElement ->
@@ -296,16 +298,18 @@ class BackupVM(
                                 parts = parts
                             )
                             
-                            // 创建MessageNode
-                            me.rerere.rikkahub.data.model.MessageNode(
+                            // 返回带时间戳的Pair用于排序
+                            Pair(createdAt, me.rerere.rikkahub.data.model.MessageNode(
                                 messages = listOf(uiMessage),
                                 selectIndex = 0
-                            )
+                            ))
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to parse message $msgId: ${e.message}")
                             null
                         }
                     }
+                    .sortedBy { it.first }  // 按时间戳排序
+                    .map { it.second }       // 提取MessageNode
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to parse nodes: ${e.message}")
                     emptyList()
