@@ -29,6 +29,9 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
+        
+        // 覆盖应用名称（不修改原始strings.xml，避免同步冲突）
+        resValue("string", "app_name", "KenHub")
     }
 
     splits {
