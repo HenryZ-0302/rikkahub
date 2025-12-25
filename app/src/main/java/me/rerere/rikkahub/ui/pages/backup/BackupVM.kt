@@ -455,7 +455,7 @@ class BackupVM(
             }
         }
         
-        // 恢复其他设置（字体大小、主题等）
+        // 恢复其他设置（显示设置、主题、模型选择等）
         data["settings"]?.let { settingsElement ->
             try {
                 val restoredSettings = json.decodeFromJsonElement(
@@ -465,16 +465,39 @@ class BackupVM(
                 // 合并设置：保留已恢复的providers和assistants，更新其他字段
                 val currentSettings = settings.value
                 updateSettings(currentSettings.copy(
-                    // UI设置
-                    fontSize = restoredSettings.fontSize,
-                    chatFontSize = restoredSettings.chatFontSize,
-                    // 其他可以同步的设置
-                    webdavSyncSettings = restoredSettings.webdavSyncSettings,
-                    displaySettings = restoredSettings.displaySettings,
-                    ttsSettings = restoredSettings.ttsSettings,
-                    searchSettings = restoredSettings.searchSettings
+                    // 主题和显示
+                    dynamicColor = restoredSettings.dynamicColor,
+                    themeId = restoredSettings.themeId,
+                    displaySetting = restoredSettings.displaySetting,
+                    // 模型选择
+                    favoriteModels = restoredSettings.favoriteModels,
+                    chatModelId = restoredSettings.chatModelId,
+                    titleModelId = restoredSettings.titleModelId,
+                    imageGenerationModelId = restoredSettings.imageGenerationModelId,
+                    translateModeId = restoredSettings.translateModeId,
+                    suggestionModelId = restoredSettings.suggestionModelId,
+                    ocrModelId = restoredSettings.ocrModelId,
+                    assistantId = restoredSettings.assistantId,
+                    // 搜索和MCP
+                    enableWebSearch = restoredSettings.enableWebSearch,
+                    searchServices = restoredSettings.searchServices,
+                    searchCommonOptions = restoredSettings.searchCommonOptions,
+                    searchServiceSelected = restoredSettings.searchServiceSelected,
+                    mcpServers = restoredSettings.mcpServers,
+                    // TTS
+                    ttsProviders = restoredSettings.ttsProviders,
+                    selectedTTSProviderId = restoredSettings.selectedTTSProviderId,
+                    // Prompts
+                    titlePrompt = restoredSettings.titlePrompt,
+                    translatePrompt = restoredSettings.translatePrompt,
+                    suggestionPrompt = restoredSettings.suggestionPrompt,
+                    ocrPrompt = restoredSettings.ocrPrompt,
+                    // 其他
+                    assistantTags = restoredSettings.assistantTags,
+                    modeInjections = restoredSettings.modeInjections,
+                    lorebooks = restoredSettings.lorebooks
                 ))
-                Log.d(TAG, "Restored other settings: fontSize=${restoredSettings.fontSize}")
+                Log.d(TAG, "Restored other settings successfully")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to restore settings: ${e.message}")
             }
