@@ -54,7 +54,13 @@ class CloudSyncService(
     
     private suspend fun syncSettingsToCloud(settings: Settings) {
         try {
-            val token = userSessionStore.getToken() ?: return
+            val token = userSessionStore.getToken()
+            if (token == null) {
+                Log.w(TAG, "syncSettingsToCloud: No token, skipping")
+                return
+            }
+            
+            Log.d(TAG, "syncSettingsToCloud: Starting sync - providers: ${settings.providers.size}, assistants: ${settings.assistants.size}")
             
             // 1. 同步提供商
             syncProviders(token, settings.providers)

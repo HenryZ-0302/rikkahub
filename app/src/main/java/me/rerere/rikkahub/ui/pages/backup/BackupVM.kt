@@ -401,37 +401,56 @@ class BackupVM(
             .build()
         
         val response = okHttpClient.newCall(request).execute()
-        if (!response.isSuccessful) return
+        if (!response.isSuccessful) {
+            Log.e(TAG, "restoreSettingsInternal: Request failed - ${response.code}")
+            return
+        }
         
         val body = response.body?.string() ?: return
+        Log.d(TAG, "restoreSettingsInternal: Response body length = ${body.length}")
+        
         val jsonElement = json.parseToJsonElement(body).jsonObject
-        val data = jsonElement["data"]?.jsonObject ?: return
+        val data = jsonElement["data"]?.jsonObject
+        if (data == null) {
+            Log.e(TAG, "restoreSettingsInternal: No data in response")
+            return
+        }
+        
+        Log.d(TAG, "restoreSettingsInternal: data keys = ${data.keys}")
         
         // 恢复提供商
         data["providers"]?.let { providersElement ->
             try {
+                Log.d(TAG, "restoreSettingsInternal: providers count = ${providersElement.jsonArray.size}")
                 val providers = providersElement.jsonArray.mapNotNull { providerJson ->
                     try {
                         val config = providerJson.jsonObject["config"]
+                        Log.d(TAG, "restoreSettingsInternal: provider config = ${config != null}")
                         if (config != null) {
                             json.decodeFromJsonElement(
                                 kotlinx.serialization.serializer<ProviderSetting>(),
                                 config
                             )
                         } else null
-                    } catch (e: Exception) { null }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse provider: ${e.message}")
+                        null
+                    }
                 }
+                Log.d(TAG, "restoreSettingsInternal: parsed providers = ${providers.size}")
                 if (providers.isNotEmpty()) {
                     updateSettings(settings.value.copy(providers = providers))
+                    Log.d(TAG, "restoreSettingsInternal: providers updated!")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to restore providers: ${e.message}")
             }
-        }
+        } ?: Log.d(TAG, "restoreSettingsInternal: No providers in response")
         
         // 恢复助手
         data["assistants"]?.let { assistantsElement ->
             try {
+                Log.d(TAG, "restoreSettingsInternal: assistants count = ${assistantsElement.jsonArray.size}")
                 val assistants = assistantsElement.jsonArray.mapNotNull { assistantJson ->
                     try {
                         val config = assistantJson.jsonObject["config"]
@@ -441,10 +460,15 @@ class BackupVM(
                                 config
                             )
                         } else null
-                    } catch (e: Exception) { null }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse assistant: ${e.message}")
+                        null
+                    }
                 }
+                Log.d(TAG, "restoreSettingsInternal: parsed assistants = ${assistants.size}")
                 if (assistants.isNotEmpty()) {
                     updateSettings(settings.value.copy(assistants = assistants))
+                    Log.d(TAG, "restoreSettingsInternal: assistants updated!")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to restore assistants: ${e.message}")
