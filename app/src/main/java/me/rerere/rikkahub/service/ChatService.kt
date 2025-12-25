@@ -872,7 +872,8 @@ class ChatService(
                     
                     // Use index offset to ensure correct message ordering
                     val msgTime = baseTime + (index * 1000L)
-                    append("\"$msgId\":{\"role\":\"$role\",\"parts\":$partsJson,\"createdAt\":\"$msgTime\"}")
+                    val modelIdStr = node.currentMessage.modelId?.toString() ?: ""
+                    append("\"$msgId\":{\"role\":\"$role\",\"parts\":$partsJson,\"createdAt\":\"$msgTime\",\"modelId\":\"$modelIdStr\"}")
                 }
                 append("}")
             }

@@ -284,6 +284,13 @@ class BackupVM(
                             
                             if (parts.isEmpty()) return@mapNotNull null
                             
+                            // 解析modelId（如果存在）
+                            val modelId = msgObj["modelId"]?.jsonPrimitive?.contentOrNull?.let { 
+                                if (it.isNotBlank()) {
+                                    try { kotlin.uuid.Uuid.parse(it) } catch (e: Exception) { null }
+                                } else null
+                            }
+                            
                             // 创建UIMessage
                             val messageRole = when (role) {
                                 "user" -> me.rerere.ai.core.MessageRole.USER
@@ -295,7 +302,8 @@ class BackupVM(
                             val uiMessage = me.rerere.ai.ui.UIMessage(
                                 id = kotlin.uuid.Uuid.parse(msgId),
                                 role = messageRole,
-                                parts = parts
+                                parts = parts,
+                                modelId = modelId
                             )
                             
                             // 返回带时间戳的Pair用于排序
