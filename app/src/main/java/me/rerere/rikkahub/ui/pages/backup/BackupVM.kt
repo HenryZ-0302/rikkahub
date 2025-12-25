@@ -250,11 +250,43 @@ class BackupVM(
         return try {
             val id = kotlin.uuid.Uuid.parse(cloudConv.id)
             
-            // 创建基本的Conversation
+            // 解析消息节点
+            val messageNodes = cloudConv.nodes?.let { nodesElement ->
+                try {
+                    json.decodeFromJsonElement(
+                        kotlinx.serialization.serializer<List<me.rerere.rikkahub.data.model.MessageNode>>(),
+                        nodesElement
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to parse nodes: ${e.message}")
+                    emptyList()
+                }
+            } ?: emptyList()
+            
+            // 解析usage
+            val usage = cloudConv.usage?.let { usageElement ->
+                try {
+                    json.decodeFromJsonElement(
+                        kotlinx.serialization.serializer<me.rerere.ai.core.Usage>(),
+                        usageElement
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            
+            // 解析assistantId
+            val assistantId = cloudConv.assistantId?.let {
+                try { kotlin.uuid.Uuid.parse(it) } catch (e: Exception) { null }
+            } ?: me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANT_ID
+            
+            // 创建完整的Conversation
             Conversation(
                 id = id,
                 title = cloudConv.title ?: "恢复的对话",
-                isPinned = cloudConv.isPinned
+                isPinned = cloudConv.isPinned,
+                messageNodes = messageNodes,
+                assistantId = assistantId
             )
         } catch (e: Exception) {
             Log.e(TAG, "parseCloudConversation failed: ${e.message}")
