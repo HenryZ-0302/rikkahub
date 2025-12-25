@@ -18,7 +18,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.hyz.rikkahub"
+        applicationId = "com.kenhub.ai"
         minSdk = 26
         targetSdk = 36
         versionCode = 120
