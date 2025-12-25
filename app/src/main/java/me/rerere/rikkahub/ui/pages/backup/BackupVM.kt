@@ -454,6 +454,31 @@ class BackupVM(
                 Log.e(TAG, "Failed to restore assistants: ${e.message}")
             }
         }
+        
+        // 恢复其他设置（字体大小、主题等）
+        data["settings"]?.let { settingsElement ->
+            try {
+                val restoredSettings = json.decodeFromJsonElement(
+                    kotlinx.serialization.serializer<Settings>(),
+                    settingsElement
+                )
+                // 合并设置：保留已恢复的providers和assistants，更新其他字段
+                val currentSettings = settings.value
+                updateSettings(currentSettings.copy(
+                    // UI设置
+                    fontSize = restoredSettings.fontSize,
+                    chatFontSize = restoredSettings.chatFontSize,
+                    // 其他可以同步的设置
+                    webdavSyncSettings = restoredSettings.webdavSyncSettings,
+                    displaySettings = restoredSettings.displaySettings,
+                    ttsSettings = restoredSettings.ttsSettings,
+                    searchSettings = restoredSettings.searchSettings
+                ))
+                Log.d(TAG, "Restored other settings: fontSize=${restoredSettings.fontSize}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to restore settings: ${e.message}")
+            }
+        }
     }
     
     // 上传所有设置到云端
