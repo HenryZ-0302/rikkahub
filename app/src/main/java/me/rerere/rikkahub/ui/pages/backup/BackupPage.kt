@@ -755,6 +755,63 @@ private fun ImportExportPage(
                 )
             }
         }
+        
+        // 云端恢复
+        stickyHeader {
+            StickyHeader {
+                Text("云端恢复")
+            }
+        }
+        
+        item {
+            val cloudCount by vm.cloudConversationCount.collectAsStateWithLifecycle()
+            val cloudSyncState by vm.cloudSyncState.collectAsStateWithLifecycle()
+            
+            Card(
+                onClick = {
+                    if (cloudSyncState !is CloudSyncState.Loading) {
+                        vm.restoreFromCloud()
+                    }
+                }
+            ) {
+                ListItem(
+                    headlineContent = {
+                        Text("从云端恢复对话")
+                    },
+                    supportingContent = {
+                        when (cloudSyncState) {
+                            is CloudSyncState.Idle -> {
+                                Text(
+                                    if (cloudCount != null) "云端有 $cloudCount 条对话可恢复" 
+                                    else "登录后可从云端恢复对话"
+                                )
+                            }
+                            is CloudSyncState.Loading -> {
+                                Text("正在恢复...")
+                            }
+                            is CloudSyncState.Success -> {
+                                val state = cloudSyncState as CloudSyncState.Success
+                                Text("恢复完成: ${state.restoredCount} 条新对话, ${state.skippedCount} 条已跳过")
+                            }
+                            is CloudSyncState.Error -> {
+                                val state = cloudSyncState as CloudSyncState.Error
+                                Text("恢复失败: ${state.message}", color = Color.Red)
+                            }
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    leadingContent = {
+                        if (cloudSyncState is CloudSyncState.Loading) {
+                            CircularWavyProgressIndicator(
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Icon(Lucide.Import, null)
+                        }
+                    }
+                )
+            }
+        }
     }
 
     // 重启对话框

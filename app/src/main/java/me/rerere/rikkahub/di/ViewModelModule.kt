@@ -49,7 +49,16 @@ val viewModelModule = module {
             settingsStore = get(),
         )
     }
-    viewModelOf(::BackupVM)
+    viewModel<BackupVM> {
+        BackupVM(
+            settingsStore = get(),
+            webdavSync = get(),
+            userSessionStore = get(),
+            okHttpClient = get(),
+            conversationRepo = get(),
+            json = get()
+        )
+    }
     viewModelOf(::ImgGenVM)
     viewModelOf(::DeveloperVM)
     viewModelOf(::PromptVM)
