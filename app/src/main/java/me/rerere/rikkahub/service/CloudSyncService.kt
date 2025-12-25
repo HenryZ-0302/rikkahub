@@ -34,6 +34,15 @@ class CloudSyncService(
 ) {
     private var lastSyncedSettings: Settings? = null
     
+    /**
+     * 标记当前设置为已同步状态
+     * 恢复操作后调用此方法，防止CloudSyncService再次同步覆盖云端数据
+     */
+    fun markAsSynced(settings: Settings) {
+        lastSyncedSettings = settings
+        Log.d(TAG, "markAsSynced: Marked settings as synced, providers: ${settings.providers.size}")
+    }
+    
     fun startAutoSync() {
         scope.launch(Dispatchers.IO) {
             // 监听设置变化，延迟2秒后同步（避免频繁同步）

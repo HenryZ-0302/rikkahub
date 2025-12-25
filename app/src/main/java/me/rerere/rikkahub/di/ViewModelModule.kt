@@ -56,7 +56,8 @@ val viewModelModule = module {
             userSessionStore = get(),
             okHttpClient = get(),
             conversationRepo = get(),
-            json = get()
+            json = get(),
+            cloudSyncService = get()
         )
     }
     viewModelOf(::ImgGenVM)
