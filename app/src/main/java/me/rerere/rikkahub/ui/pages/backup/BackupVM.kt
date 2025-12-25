@@ -22,7 +22,8 @@ import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.UserSessionStore
-import me.rerere.rikkahub.data.db.ConversationRepository
+import me.rerere.rikkahub.data.repository.ConversationRepository
+import kotlinx.coroutines.flow.first
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.sync.WebDavBackupItem
 import me.rerere.rikkahub.data.sync.WebdavSync
@@ -30,6 +31,8 @@ import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.UiState
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
 private const val TAG = "BackupVM"
@@ -202,9 +205,9 @@ class BackupVM(
                 }
                 
                 // 获取本地所有对话ID
-                val localConversationIds = conversationRepo.getAllConversations()
-                    .map { it.id.toString() }
-                    .toSet()
+                // 获取本地所有对话（使用搜索空字符串获取全部）
+                val localConversations = conversationRepo.searchConversations("").first()
+                val localConversationIds = localConversations.map { it.id.toString() }.toSet()
                 
                 var restoredCount = 0
                 var skippedCount = 0
@@ -263,17 +266,7 @@ class BackupVM(
                 }
             } ?: emptyList()
             
-            // 解析usage
-            val usage = cloudConv.usage?.let { usageElement ->
-                try {
-                    json.decodeFromJsonElement(
-                        kotlinx.serialization.serializer<me.rerere.ai.core.Usage>(),
-                        usageElement
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
+            // 解析usage (忽略，本地Conversation不需要)
             
             // 解析assistantId
             val assistantId = cloudConv.assistantId?.let {
@@ -339,9 +332,8 @@ class BackupVM(
         val result = json.decodeFromString<CloudSyncResponse>(body)
         if (!result.success || result.data == null) return
         
-        val localConversationIds = conversationRepo.getAllConversations()
-            .map { it.id.toString() }
-            .toSet()
+        val localConversations = conversationRepo.searchConversations("").first()
+        val localConversationIds = localConversations.map { it.id.toString() }.toSet()
         
         for (cloudConv in result.data) {
             if (cloudConv.isDeleted) continue
@@ -466,10 +458,7 @@ class BackupVM(
             .url("$BASE_URL$path")
             .addHeader("Authorization", "Bearer $token")
             .addHeader("Content-Type", "application/json")
-            .post(okhttp3.RequestBody.create(
-                okhttp3.MediaType.parse("application/json"),
-                body
-            ))
+            .post(body.toRequestBody("application/json".toMediaType()))
             .build()
         
         val response = okHttpClient.newCall(request).execute()
