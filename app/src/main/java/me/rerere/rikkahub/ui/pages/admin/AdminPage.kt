@@ -517,12 +517,7 @@ private fun UserCard(
                             color = MaterialTheme.colorScheme.error)
                     }
                 }
-                Text(
-                    user.email, 
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
+                Text(user.email, style = MaterialTheme.typography.bodySmall)
             }
             Text("${user.conversationCount} 对话", style = MaterialTheme.typography.labelMedium)
             // Don't show buttons for admin users
