@@ -265,6 +265,193 @@ class BackupVM(
     fun resetCloudSyncState() {
         cloudSyncState.value = CloudSyncState.Idle
     }
+    
+    // 上传所有设置到云端
+    fun uploadSettingsToCloud() {
+        viewModelScope.launch(Dispatchers.IO) {
+            cloudSyncState.value = CloudSyncState.Loading
+            
+            try {
+                val token = userSessionStore.getToken()
+                if (token == null) {
+                    cloudSyncState.value = CloudSyncState.Error("未登录")
+                    return@launch
+                }
+                
+                val currentSettings = settings.value
+                
+                // 1. 上传提供商设置
+                val providersJson = json.encodeToString(
+                    kotlinx.serialization.serializer<List<ProviderSetting>>(),
+                    currentSettings.providers
+                )
+                uploadToCloud(token, "/sync/providers", """{"providers":$providersJson}""")
+                
+                // 2. 上传助手配置
+                val assistantsJson = json.encodeToString(
+                    kotlinx.serialization.serializer<List<me.rerere.rikkahub.data.model.Assistant>>(),
+                    currentSettings.assistants
+                )
+                uploadToCloud(token, "/sync/assistants", """{"assistants":$assistantsJson}""")
+                
+                // 3. 上传其他设置
+                val settingsJson = json.encodeToString(
+                    kotlinx.serialization.serializer<Settings>(),
+                    currentSettings
+                )
+                uploadToCloud(token, "/sync/settings", """{"settings":$settingsJson}""")
+                
+                cloudSyncState.value = CloudSyncState.Success(3, 0)
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "uploadSettingsToCloud failed: ${e.message}")
+                cloudSyncState.value = CloudSyncState.Error(e.message ?: "上传失败")
+            }
+        }
+    }
+    
+    private suspend fun uploadToCloud(token: String, path: String, body: String) {
+        val request = Request.Builder()
+            .url("$BASE_URL$path")
+            .addHeader("Authorization", "Bearer $token")
+            .addHeader("Content-Type", "application/json")
+            .post(okhttp3.RequestBody.create(
+                okhttp3.MediaType.parse("application/json"),
+                body
+            ))
+            .build()
+        
+        val response = okHttpClient.newCall(request).execute()
+        if (!response.isSuccessful) {
+            throw Exception("上传失败: ${response.code}")
+        }
+    }
+    
+    // 从云端恢复所有设置
+    fun restoreSettingsFromCloud() {
+        viewModelScope.launch(Dispatchers.IO) {
+            cloudSyncState.value = CloudSyncState.Loading
+            
+            try {
+                val token = userSessionStore.getToken()
+                if (token == null) {
+                    cloudSyncState.value = CloudSyncState.Error("未登录")
+                    return@launch
+                }
+                
+                // 获取所有云端数据
+                val request = Request.Builder()
+                    .url("$BASE_URL/sync/all")
+                    .addHeader("Authorization", "Bearer $token")
+                    .get()
+                    .build()
+                
+                val response = okHttpClient.newCall(request).execute()
+                if (!response.isSuccessful) {
+                    cloudSyncState.value = CloudSyncState.Error("请求失败: ${response.code}")
+                    return@launch
+                }
+                
+                val body = response.body?.string()
+                if (body == null) {
+                    cloudSyncState.value = CloudSyncState.Error("响应为空")
+                    return@launch
+                }
+                
+                val jsonElement = json.parseToJsonElement(body).jsonObject
+                if (jsonElement["success"]?.jsonPrimitive?.contentOrNull != "true" && 
+                    jsonElement["success"]?.jsonPrimitive?.contentOrNull?.toBoolean() != true) {
+                    cloudSyncState.value = CloudSyncState.Error("获取云端数据失败")
+                    return@launch
+                }
+                
+                val data = jsonElement["data"]?.jsonObject ?: run {
+                    cloudSyncState.value = CloudSyncState.Error("数据格式错误")
+                    return@launch
+                }
+                
+                var restoredCount = 0
+                
+                // 恢复提供商
+                data["providers"]?.let { providersElement ->
+                    try {
+                        val providers = providersElement.jsonArray.mapNotNull { providerJson ->
+                            try {
+                                val config = providerJson.jsonObject["config"]
+                                if (config != null) {
+                                    json.decodeFromJsonElement(
+                                        kotlinx.serialization.serializer<ProviderSetting>(),
+                                        config
+                                    )
+                                } else null
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Failed to parse provider: ${e.message}")
+                                null
+                            }
+                        }
+                        if (providers.isNotEmpty()) {
+                            updateSettings(settings.value.copy(providers = providers))
+                            restoredCount++
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to restore providers: ${e.message}")
+                    }
+                }
+                
+                // 恢复助手
+                data["assistants"]?.let { assistantsElement ->
+                    try {
+                        val assistants = assistantsElement.jsonArray.mapNotNull { assistantJson ->
+                            try {
+                                val config = assistantJson.jsonObject["config"]
+                                if (config != null) {
+                                    json.decodeFromJsonElement(
+                                        kotlinx.serialization.serializer<me.rerere.rikkahub.data.model.Assistant>(),
+                                        config
+                                    )
+                                } else null
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Failed to parse assistant: ${e.message}")
+                                null
+                            }
+                        }
+                        if (assistants.isNotEmpty()) {
+                            updateSettings(settings.value.copy(assistants = assistants))
+                            restoredCount++
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to restore assistants: ${e.message}")
+                    }
+                }
+                
+                // 恢复其他设置
+                data["settings"]?.let { settingsElement ->
+                    try {
+                        if (settingsElement !is kotlinx.serialization.json.JsonNull) {
+                            val cloudSettings = json.decodeFromJsonElement(
+                                kotlinx.serialization.serializer<Settings>(),
+                                settingsElement
+                            )
+                            // 合并设置，保留本地的providers和assistants（已经单独处理）
+                            updateSettings(cloudSettings.copy(
+                                providers = settings.value.providers,
+                                assistants = settings.value.assistants
+                            ))
+                            restoredCount++
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to restore settings: ${e.message}")
+                    }
+                }
+                
+                cloudSyncState.value = CloudSyncState.Success(restoredCount, 0)
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "restoreSettingsFromCloud failed: ${e.message}")
+                cloudSyncState.value = CloudSyncState.Error(e.message ?: "恢复失败")
+            }
+        }
+    }
 
     fun restoreFromChatBox(file: File) {
         val importProviders = arrayListOf<ProviderSetting>()
