@@ -253,20 +253,63 @@ class BackupVM(
         return try {
             val id = kotlin.uuid.Uuid.parse(cloudConv.id)
             
-            // 解析消息节点
+            // 解析消息节点 - 云端格式: {"msgId": {"role": "user", "parts": [...], "createdAt": "..."}}
             val messageNodes = cloudConv.nodes?.let { nodesElement ->
                 try {
-                    json.decodeFromJsonElement(
-                        kotlinx.serialization.serializer<List<me.rerere.rikkahub.data.model.MessageNode>>(),
-                        nodesElement
-                    )
+                    val nodesObj = nodesElement.jsonObject
+                    nodesObj.entries.mapNotNull { (msgId, msgData) ->
+                        try {
+                            val msgObj = msgData.jsonObject
+                            val role = msgObj["role"]?.jsonPrimitive?.contentOrNull ?: "user"
+                            val partsArray = msgObj["parts"]?.jsonArray ?: return@mapNotNull null
+                            
+                            // 解析parts
+                            val parts = partsArray.mapNotNull { partElement ->
+                                val partObj = partElement.jsonObject
+                                when {
+                                    partObj.containsKey("text") -> {
+                                        val text = partObj["text"]?.jsonPrimitive?.contentOrNull ?: ""
+                                        me.rerere.ai.ui.UIMessagePart.Text(text)
+                                    }
+                                    partObj.containsKey("url") -> {
+                                        val url = partObj["url"]?.jsonPrimitive?.contentOrNull ?: ""
+                                        me.rerere.ai.ui.UIMessagePart.Image(url = url)
+                                    }
+                                    else -> null
+                                }
+                            }
+                            
+                            if (parts.isEmpty()) return@mapNotNull null
+                            
+                            // 创建UIMessage
+                            val messageRole = when (role) {
+                                "user" -> me.rerere.ai.core.MessageRole.USER
+                                "assistant" -> me.rerere.ai.core.MessageRole.ASSISTANT
+                                "system" -> me.rerere.ai.core.MessageRole.SYSTEM
+                                else -> me.rerere.ai.core.MessageRole.USER
+                            }
+                            
+                            val uiMessage = me.rerere.ai.ui.UIMessage(
+                                id = kotlin.uuid.Uuid.parse(msgId),
+                                role = messageRole,
+                                parts = parts
+                            )
+                            
+                            // 创建MessageNode
+                            me.rerere.rikkahub.data.model.MessageNode(
+                                messages = listOf(uiMessage),
+                                selectIndex = 0
+                            )
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to parse message $msgId: ${e.message}")
+                            null
+                        }
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to parse nodes: ${e.message}")
                     emptyList()
                 }
             } ?: emptyList()
-            
-            // 解析usage (忽略，本地Conversation不需要)
             
             // 解析assistantId
             val assistantId = cloudConv.assistantId?.let {
