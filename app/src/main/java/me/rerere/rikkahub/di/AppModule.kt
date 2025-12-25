@@ -77,4 +77,14 @@ val appModule = module {
             json = get<kotlinx.serialization.json.Json>()
         )
     }
+    
+    single {
+        me.rerere.rikkahub.service.CloudSyncService(
+            settingsStore = get(),
+            userSessionStore = get(),
+            okHttpClient = get(),
+            json = get<kotlinx.serialization.json.Json>(),
+            scope = get<AppScope>()
+        )
+    }
 }

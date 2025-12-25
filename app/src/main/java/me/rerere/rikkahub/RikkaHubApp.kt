@@ -54,6 +54,9 @@ class RikkaHubApp : Application() {
             setDefaultsAsync(R.xml.remote_config_defaults)
             fetchAndActivate()
         }
+        
+        // Start cloud sync service
+        get<me.rerere.rikkahub.service.CloudSyncService>().startAutoSync()
     }
 
     private fun deleteTempFiles() {
