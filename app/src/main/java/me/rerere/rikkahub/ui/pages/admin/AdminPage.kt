@@ -517,7 +517,12 @@ private fun UserCard(
                             color = MaterialTheme.colorScheme.error)
                     }
                 }
-                Text(user.email, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    user.email, 
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
             }
             Text("${user.conversationCount} 对话", style = MaterialTheme.typography.labelMedium)
             // Don't show buttons for admin users
@@ -662,12 +667,12 @@ private fun AnnouncementConfigCard(viewModel: AdminViewModel) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("强制阅读时间: ${editedReadTime}秒")
+                Text("强制阅读时间: ${editedReadTime}秒", modifier = Modifier.width(120.dp))
                 Slider(
                     value = editedReadTime.toFloat(),
                     onValueChange = { editedReadTime = it.toInt() },
                     valueRange = 0f..30f,
-                    steps = 29,
+                    steps = 5,  // 每5秒一档: 0, 5, 10, 15, 20, 25, 30
                     modifier = Modifier.weight(1f)
                 )
             }
