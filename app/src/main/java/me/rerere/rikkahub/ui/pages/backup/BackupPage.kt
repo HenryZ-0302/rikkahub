@@ -759,7 +759,7 @@ private fun ImportExportPage(
         // 云端恢复
         stickyHeader {
             StickyHeader {
-                Text("云端恢复")
+                Text("云端同步")
             }
         }
         
@@ -770,20 +770,23 @@ private fun ImportExportPage(
             Card(
                 onClick = {
                     if (cloudSyncState !is CloudSyncState.Loading) {
-                        vm.restoreFromCloud()
+                        vm.restoreAllFromCloud()
                     }
                 }
             ) {
                 ListItem(
                     headlineContent = {
-                        Text("从云端恢复对话")
+                        Text("一键从云端恢复")
                     },
                     supportingContent = {
                         when (cloudSyncState) {
                             is CloudSyncState.Idle -> {
                                 Text(
-                                    if (cloudCount != null) "云端有 $cloudCount 条对话可恢复" 
-                                    else "登录后可从云端恢复对话"
+                                    buildString {
+                                        append("恢复对话")
+                                        if (cloudCount != null) append("(${cloudCount}条)")
+                                        append("、提供商、助手等所有数据")
+                                    }
                                 )
                             }
                             is CloudSyncState.Loading -> {
@@ -791,86 +794,7 @@ private fun ImportExportPage(
                             }
                             is CloudSyncState.Success -> {
                                 val state = cloudSyncState as CloudSyncState.Success
-                                Text("恢复完成: ${state.restoredCount} 条新对话, ${state.skippedCount} 条已跳过")
-                            }
-                            is CloudSyncState.Error -> {
-                                val state = cloudSyncState as CloudSyncState.Error
-                                Text("恢复失败: ${state.message}", color = Color.Red)
-                            }
-                        }
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    leadingContent = {
-                        if (cloudSyncState is CloudSyncState.Loading) {
-                            CircularWavyProgressIndicator(
-                                modifier = Modifier.size(24.dp)
-                            )
-                        } else {
-                            Icon(Lucide.Import, null)
-                        }
-                    }
-                )
-            }
-        }
-        
-        // 上传设置到云端
-        item {
-            val cloudSyncState by vm.cloudSyncState.collectAsStateWithLifecycle()
-            
-            Card(
-                onClick = {
-                    if (cloudSyncState !is CloudSyncState.Loading) {
-                        vm.uploadSettingsToCloud()
-                    }
-                }
-            ) {
-                ListItem(
-                    headlineContent = {
-                        Text("上传设置到云端")
-                    },
-                    supportingContent = {
-                        Text("备份提供商、助手配置等所有设置")
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    leadingContent = {
-                        if (cloudSyncState is CloudSyncState.Loading) {
-                            CircularWavyProgressIndicator(
-                                modifier = Modifier.size(24.dp)
-                            )
-                        } else {
-                            Icon(Lucide.Upload, null)
-                        }
-                    }
-                )
-            }
-        }
-        
-        // 从云端恢复设置
-        item {
-            val cloudSyncState by vm.cloudSyncState.collectAsStateWithLifecycle()
-            
-            Card(
-                onClick = {
-                    if (cloudSyncState !is CloudSyncState.Loading) {
-                        vm.restoreSettingsFromCloud()
-                    }
-                }
-            ) {
-                ListItem(
-                    headlineContent = {
-                        Text("从云端恢复设置")
-                    },
-                    supportingContent = {
-                        when (cloudSyncState) {
-                            is CloudSyncState.Idle -> {
-                                Text("恢复提供商、助手配置等所有设置")
-                            }
-                            is CloudSyncState.Loading -> {
-                                Text("正在恢复...")
-                            }
-                            is CloudSyncState.Success -> {
-                                val state = cloudSyncState as CloudSyncState.Success
-                                Text("恢复完成: ${state.restoredCount} 项配置")
+                                Text("恢复完成")
                             }
                             is CloudSyncState.Error -> {
                                 val state = cloudSyncState as CloudSyncState.Error

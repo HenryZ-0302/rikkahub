@@ -266,6 +266,125 @@ class BackupVM(
         cloudSyncState.value = CloudSyncState.Idle
     }
     
+    // 一键从云端恢复所有数据（对话 + 设置）
+    fun restoreAllFromCloud() {
+        viewModelScope.launch(Dispatchers.IO) {
+            cloudSyncState.value = CloudSyncState.Loading
+            
+            try {
+                val token = userSessionStore.getToken()
+                if (token == null) {
+                    cloudSyncState.value = CloudSyncState.Error("未登录")
+                    return@launch
+                }
+                
+                // 1. 恢复对话
+                restoreConversationsInternal(token)
+                
+                // 2. 恢复设置
+                restoreSettingsInternal(token)
+                
+                cloudSyncState.value = CloudSyncState.Success(0, 0)
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "restoreAllFromCloud failed: ${e.message}")
+                cloudSyncState.value = CloudSyncState.Error(e.message ?: "恢复失败")
+            }
+        }
+    }
+    
+    private suspend fun restoreConversationsInternal(token: String) {
+        val request = Request.Builder()
+            .url("$BASE_URL/sync/conversations")
+            .addHeader("Authorization", "Bearer $token")
+            .get()
+            .build()
+        
+        val response = okHttpClient.newCall(request).execute()
+        if (!response.isSuccessful) return
+        
+        val body = response.body?.string() ?: return
+        val result = json.decodeFromString<CloudSyncResponse>(body)
+        if (!result.success || result.data == null) return
+        
+        val localConversationIds = conversationRepo.getAllConversations()
+            .map { it.id.toString() }
+            .toSet()
+        
+        for (cloudConv in result.data) {
+            if (cloudConv.isDeleted) continue
+            if (localConversationIds.contains(cloudConv.id)) continue
+            
+            try {
+                val conversation = parseCloudConversation(cloudConv)
+                if (conversation != null) {
+                    conversationRepo.insertConversation(conversation)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to restore conversation ${cloudConv.id}: ${e.message}")
+            }
+        }
+    }
+    
+    private suspend fun restoreSettingsInternal(token: String) {
+        val request = Request.Builder()
+            .url("$BASE_URL/sync/all")
+            .addHeader("Authorization", "Bearer $token")
+            .get()
+            .build()
+        
+        val response = okHttpClient.newCall(request).execute()
+        if (!response.isSuccessful) return
+        
+        val body = response.body?.string() ?: return
+        val jsonElement = json.parseToJsonElement(body).jsonObject
+        val data = jsonElement["data"]?.jsonObject ?: return
+        
+        // 恢复提供商
+        data["providers"]?.let { providersElement ->
+            try {
+                val providers = providersElement.jsonArray.mapNotNull { providerJson ->
+                    try {
+                        val config = providerJson.jsonObject["config"]
+                        if (config != null) {
+                            json.decodeFromJsonElement(
+                                kotlinx.serialization.serializer<ProviderSetting>(),
+                                config
+                            )
+                        } else null
+                    } catch (e: Exception) { null }
+                }
+                if (providers.isNotEmpty()) {
+                    updateSettings(settings.value.copy(providers = providers))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to restore providers: ${e.message}")
+            }
+        }
+        
+        // 恢复助手
+        data["assistants"]?.let { assistantsElement ->
+            try {
+                val assistants = assistantsElement.jsonArray.mapNotNull { assistantJson ->
+                    try {
+                        val config = assistantJson.jsonObject["config"]
+                        if (config != null) {
+                            json.decodeFromJsonElement(
+                                kotlinx.serialization.serializer<me.rerere.rikkahub.data.model.Assistant>(),
+                                config
+                            )
+                        } else null
+                    } catch (e: Exception) { null }
+                }
+                if (assistants.isNotEmpty()) {
+                    updateSettings(settings.value.copy(assistants = assistants))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to restore assistants: ${e.message}")
+            }
+        }
+    }
+    
     // 上传所有设置到云端
     fun uploadSettingsToCloud() {
         viewModelScope.launch(Dispatchers.IO) {
