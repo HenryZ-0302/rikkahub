@@ -7,7 +7,7 @@
   <string name="about_page_version">Версия</string>
   <string name="about_page_website">Веб-сайт</string>
   <string name="add">Добавить</string>
-  <string name="app_name">KenHub</string>
+  <string name="app_name">RikkaHub</string>
   <string name="assistant_detail_basic_desc">Настройте имя, аватар, модель и параметры</string>
   <string name="assistant_detail_injections_desc">Настройте режим вставок и мировые книги</string>
   <string name="assistant_detail_local_tools_desc">Включите локальные инструменты, например движок JavaScript</string>
@@ -18,7 +18,7 @@
   <string name="assistant_importer_import_failed">Импорт не удался</string>
   <string name="assistant_importer_import_tavern_json">Импортировать карточку персонажа Tavern (JSON)</string>
   <string name="assistant_importer_import_tavern_png">Импортировать карту персонажа Tavern (PNG)</string>
-  <string name="assistant_importer_importing">Импорт�?/string>
+  <string name="assistant_importer_importing">Импорт…</string>
   <string name="assistant_importer_missing_data_field">Отсутствует поле данных</string>
   <string name="assistant_importer_missing_name_field">Отсутствует поле имени</string>
   <string name="assistant_importer_missing_spec_field">Отсутствует поле спецификации</string>
@@ -133,7 +133,7 @@
   <string name="avatar_url_dialog_title">Введите URL изображения</string>
   <string name="avatar_url_hint">Введите URL изображения</string>
   <string name="back">Назад</string>
-  <string name="backup_page_backing_up">Идёт резервное копирование�?/string>
+  <string name="backup_page_backing_up">Идёт резервное копирование…</string>
   <string name="backup_page_backup_items">Элементы резервной копии</string>
   <string name="backup_page_backup_now">Создать резервную копию</string>
   <string name="backup_page_backup_success">Резервное копирование выполнено успешно</string>
@@ -144,14 +144,14 @@
   <string name="backup_page_delete_failed">Не удалось удалить: %s</string>
   <string name="backup_page_delete_success">Удаление выполнено успешно</string>
   <string name="backup_page_export_desc">Экспортировать данные приложения в файл</string>
-  <string name="backup_page_exporting">Экспорт�?/string>
+  <string name="backup_page_exporting">Экспорт…</string>
   <string name="backup_page_files">Файлы</string>
   <string name="backup_page_import_chatbox_desc">Импорт данных из ChatBox</string>
   <string name="backup_page_import_desc">Импортировать локальный файл резервной копии</string>
   <string name="backup_page_import_export">Импорт и экспорт</string>
   <string name="backup_page_import_from_chatbox">Импорт из ChatBox</string>
   <string name="backup_page_import_from_other_app">Импорт из другого приложения</string>
-  <string name="backup_page_importing">Импорт�?/string>
+  <string name="backup_page_importing">Импорт…</string>
   <string name="backup_page_loading_failed">Не удалось загрузить файлы резервной копии: %s</string>
   <string name="backup_page_local_backup_export">Экспорт в файл</string>
   <string name="backup_page_local_backup_import">Импорт из файла</string>
@@ -281,7 +281,7 @@
   <string name="imggen_page_model_selection">Выбор модели</string>
   <string name="imggen_page_model_selection_desc">Выберите модель ИИ для генерации изображений</string>
   <string name="imggen_page_no_generated_images">Нет сгенерированных изображений</string>
-  <string name="imggen_page_prompt_placeholder">Опишите изображение, которое хотите сгенерировать�?/string>
+  <string name="imggen_page_prompt_placeholder">Опишите изображение, которое хотите сгенерировать…</string>
   <string name="imggen_page_save">Сохранить</string>
   <string name="imggen_page_save_failed">Не удалось сохранить: %1$s</string>
   <string name="imggen_page_settings_title">Настройки генерации изображений</string>
@@ -295,7 +295,7 @@
   <string name="language_simplified_chinese">🇷🇺 Упрощённый китайский</string>
   <string name="language_spanish">🇪🇸 Испанский</string>
   <string name="language_traditional_chinese">🇨🇳 繁體中文</string>
-  <string name="mcp_picker_syncing">Синхронизация MCP-серверов�?/string>
+  <string name="mcp_picker_syncing">Синхронизация MCP-серверов…</string>
   <string name="mcp_picker_title">Серверы MCP</string>
   <string name="menu">Меню</string>
   <string name="menu_page_afternoon_greeting">Добрый день👋</string>
@@ -491,7 +491,7 @@
   <string name="setting_page_search_title">Служба поиска</string>
   <string name="setting_page_share">Поделиться</string>
   <string name="setting_page_share_desc">Поделиться этим приложением с друзьями</string>
-  <string name="setting_page_share_text">KenHub �?открытый Android-ассистент с ИИ\n\nСайт: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">RikkaHub — открытый Android-ассистент с ИИ\n\nСайт: https://rikka-ai.com/</string>
   <string name="setting_page_theme_setting">Настройки темы</string>
   <string name="setting_page_tts_service">Служба преобразования текста в речь</string>
   <string name="setting_page_tts_service_desc">Настроить поставщиков службы преобразования текста в речь</string>
@@ -556,7 +556,7 @@
   <string name="setting_provider_page_qr_decode_failed">Не удалось распознать QR-код: %s</string>
   <string name="setting_provider_page_reasoning">Размышления</string>
   <string name="setting_provider_page_response_api">API ответов</string>
-  <string name="setting_provider_page_response_api_warning">Response API �?это новое поколение API от OpenAI. Большинство поставщиков его не поддерживают. Если вы не знаете, что это такое, не включайте его.</string>
+  <string name="setting_provider_page_response_api_warning">Response API — это новое поколение API от OpenAI. Большинство поставщиков его не поддерживают. Если вы не знаете, что это такое, не включайте его.</string>
   <string name="setting_provider_page_save">Сохранить</string>
   <string name="setting_provider_page_save_success">Сохранено успешно</string>
   <string name="setting_provider_page_scan_error">Ошибка: %s</string>
@@ -595,7 +595,7 @@
   <string name="setting_tts_page_name_description">Пользовательское имя для этого поставщика TTS</string>
   <string name="setting_tts_page_name_placeholder">Введите имя поставщика</string>
   <string name="setting_tts_page_pitch">Высота тона</string>
-  <string name="setting_tts_page_pitch_description">Управление высотой голоса (0,1�?,0, 1,0 �?нормальная высота)</string>
+  <string name="setting_tts_page_pitch_description">Управление высотой голоса (0,1–2,0, 1,0 — нормальная высота)</string>
   <string name="setting_tts_page_provider_gemini">Gemini</string>
   <string name="setting_tts_page_provider_openai">OpenAI</string>
   <string name="setting_tts_page_provider_system">Системное TTS</string>
@@ -603,9 +603,9 @@
   <string name="setting_tts_page_provider_type_description">Выберите тип поставщика TTS</string>
   <string name="setting_tts_page_selected">Выбрано</string>
   <string name="setting_tts_page_speech_rate">Скорость речи</string>
-  <string name="setting_tts_page_speech_rate_description">Управление скоростью речи (0,1�?,0, 1,0 �?нормальная скорость)</string>
+  <string name="setting_tts_page_speech_rate_description">Управление скоростью речи (0,1–3,0, 1,0 — нормальная скорость)</string>
   <string name="setting_tts_page_speed">Скорость</string>
-  <string name="setting_tts_page_speed_description">Скорость речи (0,25�?,0)</string>
+  <string name="setting_tts_page_speed_description">Скорость речи (0,25–4,0)</string>
   <string name="setting_tts_page_test_text">Здравствуйте, это тест преобразования текста в речь.</string>
   <string name="setting_tts_page_title">Преобразование текста в речь</string>
   <string name="setting_tts_page_voice">Голос</string>
