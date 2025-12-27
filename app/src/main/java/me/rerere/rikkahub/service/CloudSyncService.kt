@@ -48,13 +48,26 @@ class CloudSyncService(
             // 监听设置变化，延迟2秒后同步（避免频繁同步）
             settingsStore.settingsFlow
                 .debounce(2000)
-                .distinctUntilChanged()
                 .collectLatest { settings ->
-                    if (settings.init) return@collectLatest
+                    if (settings.init) {
+                        Log.d(TAG, "startAutoSync: Skip init settings")
+                        return@collectLatest
+                    }
                     
                     // 检查是否有实际变化
-                    if (lastSyncedSettings == settings) return@collectLatest
+                    val lastSettings = lastSyncedSettings
+                    if (lastSettings != null) {
+                        val providersChanged = lastSettings.providers != settings.providers
+                        val assistantsChanged = lastSettings.assistants != settings.assistants
+                        Log.d(TAG, "startAutoSync: providersChanged=$providersChanged, assistantsChanged=$assistantsChanged")
+                        
+                        if (!providersChanged && !assistantsChanged && lastSettings == settings) {
+                            Log.d(TAG, "startAutoSync: No changes detected, skipping sync")
+                            return@collectLatest
+                        }
+                    }
                     
+                    Log.d(TAG, "startAutoSync: Syncing settings - providers: ${settings.providers.size}, assistants: ${settings.assistants.size}")
                     syncSettingsToCloud(settings)
                     lastSyncedSettings = settings
                 }
