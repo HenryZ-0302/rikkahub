@@ -346,6 +346,10 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         onClick = {
                             scope.launch {
                                 userSessionStore.clearSession()
+                                // Navigate to login page and clear back stack
+                                navController.navigate(Screen.Login) {
+                                    popUpTo(0) { inclusive = true }
+                                }
                             }
                         }
                     )

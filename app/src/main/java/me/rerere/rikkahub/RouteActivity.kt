@@ -198,6 +198,15 @@ class RouteActivity : ComponentActivity() {
             }
         }
         
+        // Also monitor login state changes (e.g., when user logs out)
+        LaunchedEffect(isLoggedIn, hasCheckedLogin) {
+            if (hasCheckedLogin && !isLoggedIn) {
+                navBackStack.navigate(Screen.Login) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
+        
         SharedTransitionLayout {
             CompositionLocalProvider(
                 LocalNavController provides navBackStack,
