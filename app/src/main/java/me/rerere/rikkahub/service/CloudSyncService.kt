@@ -107,6 +107,8 @@ class CloudSyncService(
                 providers
             )
             
+            Log.d(TAG, "syncProviders: Uploading ${providers.size} providers")
+            
             val request = Request.Builder()
                 .url("$BASE_URL/sync/providers")
                 .addHeader("Authorization", "Bearer $token")
@@ -114,7 +116,15 @@ class CloudSyncService(
                 .post("""{"providers":$providersJson}""".toRequestBody("application/json".toMediaType()))
                 .build()
             
-            okHttpClient.newCall(request).execute().close()
+            val response = okHttpClient.newCall(request).execute()
+            val responseBody = response.body?.string()
+            
+            if (response.isSuccessful) {
+                Log.d(TAG, "syncProviders: Success - $responseBody")
+            } else {
+                Log.e(TAG, "syncProviders: Failed ${response.code} - $responseBody")
+            }
+            response.close()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to sync providers: ${e.message}")
         }
@@ -127,6 +137,8 @@ class CloudSyncService(
                 assistants
             )
             
+            Log.d(TAG, "syncAssistants: Uploading ${assistants.size} assistants")
+            
             val request = Request.Builder()
                 .url("$BASE_URL/sync/assistants")
                 .addHeader("Authorization", "Bearer $token")
@@ -134,7 +146,15 @@ class CloudSyncService(
                 .post("""{"assistants":$assistantsJson}""".toRequestBody("application/json".toMediaType()))
                 .build()
             
-            okHttpClient.newCall(request).execute().close()
+            val response = okHttpClient.newCall(request).execute()
+            val responseBody = response.body?.string()
+            
+            if (response.isSuccessful) {
+                Log.d(TAG, "syncAssistants: Success - $responseBody")
+            } else {
+                Log.e(TAG, "syncAssistants: Failed ${response.code} - $responseBody")
+            }
+            response.close()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to sync assistants: ${e.message}")
         }
