@@ -291,6 +291,15 @@ class BackupVM(
                                 } else null
                             }
                             
+                            // 将时间戳转换为LocalDateTime
+                            val createdAtDateTime = if (createdAt > 0) {
+                                kotlinx.datetime.Instant.fromEpochMilliseconds(createdAt)
+                                    .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                            } else {
+                                kotlinx.datetime.Clock.System.now()
+                                    .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                            }
+                            
                             // 创建UIMessage
                             val messageRole = when (role) {
                                 "user" -> me.rerere.ai.core.MessageRole.USER
@@ -303,6 +312,7 @@ class BackupVM(
                                 id = kotlin.uuid.Uuid.parse(msgId),
                                 role = messageRole,
                                 parts = parts,
+                                createdAt = createdAtDateTime,
                                 modelId = modelId
                             )
                             
