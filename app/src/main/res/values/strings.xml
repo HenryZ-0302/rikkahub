@@ -177,6 +177,14 @@
   <string name="cancel">Cancel</string>
   <string name="cancel_edit">Cancel Edit</string>
   <string name="chat_input_placeholder">Chat with AI</string>
+  <string name="chat_welcome_suggestion_writing_title">Help me write</string>
+  <string name="chat_welcome_suggestion_writing_prompt">Help me write a professional email</string>
+  <string name="chat_welcome_suggestion_programming_title">Code assistance</string>
+  <string name="chat_welcome_suggestion_programming_prompt">Help me write code or debug a problem</string>
+  <string name="chat_welcome_suggestion_brainstorm_title">Brainstorm ideas</string>
+  <string name="chat_welcome_suggestion_brainstorm_prompt">Help me brainstorm creative ideas</string>
+  <string name="chat_welcome_suggestion_explain_title">Explain a concept</string>
+  <string name="chat_welcome_suggestion_explain_prompt">Explain a complex topic in simple terms</string>
   <string name="chat_message_tool_call_generic">Called tool %1$s</string>
   <string name="chat_message_tool_call_label">Called tool %1$s</string>
   <string name="chat_message_tool_call_result">Call result</string>
